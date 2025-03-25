@@ -1,5 +1,10 @@
+import Link from "next/link";
+import PageHeader from "./components/header/pageHeader";
+
 export default function Home() {
   return (
-    <h1>Hello World!</h1>
+    <>
+    <PageHeader/>
+    </>
   );
 }
