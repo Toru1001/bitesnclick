@@ -10,9 +10,9 @@ export default function Home() {
     <>
     <PageHeader/>
     <Hero/>
-    <Banner/>
-    <Section2/>
     <Banner2/>
+    <Section2/>
+    <Banner/>
     </>
   );
 }
