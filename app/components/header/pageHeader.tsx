@@ -9,7 +9,7 @@ const PageHeader: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <header className="flex justify-between items-center h-20 bg-[#7B5137] px-6 md:px-30 relative">
+    <header className="flex justify-between items-center h-20 bg-[#7B5137] px-6 md:px-30 relative z-20">
       {/* Mobile Header */}
       <div className="md:hidden flex w-full justify-between items-center">
         {/* Menu Button */}
@@ -58,7 +58,7 @@ const PageHeader: React.FC = () => {
 
       {/* Mobile Dropdown Menu with Animation */}
       <div
-        className={`absolute top-20 left-0 w-full bg-[#7B5137] flex flex-col items-center py-4 space-y-3 md:hidden transition-transform duration-300 ${
+        className={`absolute top-20 left-0 w-full bg-[#7B5137] flex flex-col items-center py-4 space-y-3 md:hidden transition-transform duration-300 z-20 ${
           menuOpen ? "translate-y-0 opacity-100" : "-translate-y-10 opacity-0 pointer-events-none"
         }`}
       >
@@ -76,10 +76,10 @@ const PageHeader: React.FC = () => {
         </Link>
 
         {/* Mobile Buttons */}
-        <button className="border-2 border-[#E19517] rounded-lg py-1 px-4 cursor-pointer text-amber-50 font-medium w-3/4">
+        <button className="border-2 border-[#E19517] rounded-lg py-1 px-4 cursor-pointer text-amber-50 font-medium w-3/4 z-20">
           Log In
         </button>
-        <button className="border-2 border-[#E19517] bg-[#E19517] rounded-lg py-1 px-4 cursor-pointer text-amber-50 font-medium w-3/4">
+        <button className="border-2 border-[#E19517] bg-[#E19517] rounded-lg py-1 px-4 cursor-pointer text-amber-50 font-medium w-3/4 z-20">
           Sign Up
         </button>
       </div>
