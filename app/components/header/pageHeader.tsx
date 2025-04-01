@@ -4,11 +4,14 @@ import Link from "next/link";
 import React, { useState } from "react";
 import Image from "next/image";
 import { Menu, X } from "lucide-react";
+import LoginModal from "../modal/login_modal";
 
 const PageHeader: React.FC = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
   return (
+    <>
     <header className="flex justify-between items-center h-20 bg-[#7B5137] px-6 md:px-30 relative z-20">
       {/* Mobile Header */}
       <div className="md:hidden flex w-full justify-between items-center">
@@ -48,7 +51,7 @@ const PageHeader: React.FC = () => {
 
       {/* Desktop Buttons */}
       <div className="hidden md:flex gap-x-3">
-        <button className="border-2 border-[#E19517] rounded-lg py-1 px-4 cursor-pointer text-amber-50 font-medium">
+        <button className="border-2 border-[#E19517] rounded-lg py-1 px-4 cursor-pointer text-amber-50 font-medium" onClick={() => setModalOpen(true)}>
           Log In
         </button>
         <button className="border-2 border-[#E19517] bg-[#E19517] rounded-lg py-1 px-4 cursor-pointer text-amber-50 font-medium">
@@ -84,6 +87,9 @@ const PageHeader: React.FC = () => {
         </button>
       </div>
     </header>
+    {modalOpen && <LoginModal onClose={() => setModalOpen(false)} />}
+    </>
+    
   );
 };
 
