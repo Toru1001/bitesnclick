@@ -3,7 +3,7 @@ import Image from 'next/image';
 
 const Hero: React.FC = () => {
   return (
-    <div className="flex flex-col md:flex-row items-center justify-center h-auto md:h-160 bg-[#7B5137] px-6 md:px-30 py-10 md:py-0 text-center md:text-left">
+    <div className="flex flex-col md:flex-row items-center justify-center h-auto md:h-160 bg-[#7B5137] px-6 md:px-30 py-10 md:py-0 text-center md:text-left z-0">
       <div className="flex flex-col gap-5 md:gap-10 w-full md:w-200 items-center md:items-start">
         <div className="flex flex-col gap-2 md:gap-5">
           <div className="font-bold text-amber-50 text-3xl md:text-6xl">Enjoy Your Coffee</div>
