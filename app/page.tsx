@@ -14,9 +14,13 @@ export default function Home() {
     <>
     <PageHeader/>
     <Hero/>
-    <Banner2/>
+    <Banner/>
     <Section2/>
-    <Banner2/>
+    <Banner2/> 
+    <ProductSection/>
+    <OurShop/>
+    <AboutUs/>
+    <Footer/>
     </>
   );
 }
