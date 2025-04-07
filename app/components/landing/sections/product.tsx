@@ -1,6 +1,6 @@
 import React from "react";
 import Image from "next/image";
-import ProductCard from "../model/product-card";
+import ProductCard from "../../model/product-card";
 
 const ProductSection: React.FC = () => {
   return (
