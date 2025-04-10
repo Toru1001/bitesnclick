@@ -11,8 +11,8 @@ import {
   CircleUserRoundIcon,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import LoginModal from "../modal/login_modal";
-import SignUpModal from "../modal/signup_modal";
+import LoginModal from "../modal/account_modify/login_modal";
+import SignUpModal from "../modal/account_modify/signup_modal";
 import { Session } from "@supabase/supabase-js";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
@@ -47,6 +47,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({ session, setSession }) => {
     await supabase.auth.signOut();
     setSession(null);
     localStorage.clear();
+    window.location.reload();
   };
 
   const renderAuthButtons = () => {

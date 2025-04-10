@@ -21,7 +21,6 @@ const VerificationModal: React.FC<VerificationModalProps> = ({ email, password, 
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
     if (error) {
-      // still not verified or some error
       setMessage('Still waiting for verification...');
       return;
     }
@@ -30,14 +29,14 @@ const VerificationModal: React.FC<VerificationModalProps> = ({ email, password, 
       clearInterval(intervalId!);
       localStorage.setItem("user_id", data.user.id);
       localStorage.setItem("access_token", data.session.access_token);
-      onSuccess(); // call parent to close both modals
+      onSuccess(); 
     }
 
     setChecking(false);
   };
 
   useEffect(() => {
-    const id = setInterval(checkEmailVerified, 3000); // every 3 seconds
+    const id = setInterval(checkEmailVerified, 3000);
     setIntervalId(id);
 
     return () => clearInterval(id);
