@@ -7,15 +7,16 @@ type ProductCardProps = {
   productId: number;
   className: string;
   category: string;
+  onClicked: () => void | Promise<void>;
 };
 
 const ProductCard: React.FC<ProductCardProps> = ({
   productId,
   className,
   category,
+  onClicked,
 }) => {
   const [product, setProduct] = useState<any>(null);
-  const [categoryName, setCategoryName] = useState<string>("");
 
   useEffect(() => {
     const fetchProductDetails = async () => {
@@ -30,7 +31,6 @@ const ProductCard: React.FC<ProductCardProps> = ({
       } else {
         console.log("Fetched product data:", data);
         setProduct(data);
-        setCategoryName(data?.category?.name || "Unknown Category");
       }
     };
 
@@ -77,7 +77,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
   const imageUrl = product.img || null;
   const validImageUrl = imageUrl ? imageUrl.replace(/#/g, '%23') : null;
   return (
-    <div className={`${className} w-75 bg-[#7B5137] rounded-2xl p-4 shadow-lg text-white transform transition duration-300 hover:scale-105 cursor-pointer`}>
+    <div className={`${className} w-75 bg-[#7B5137] rounded-2xl p-4 shadow-lg text-white transform transition duration-300 hover:scale-105 cursor-pointer`} onClick={onClicked}>
       <div className="rounded-2xl overflow-hidden">
         {validImageUrl ? (
           <Image
@@ -120,6 +120,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </button>
         </div>
       </div>
+      
     </div>
   );
 };

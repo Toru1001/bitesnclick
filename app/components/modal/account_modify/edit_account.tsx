@@ -169,7 +169,6 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
       }
     } catch (err) {
       console.error('Error deleting account:', err);
-      // setError(err.message);
     }
   };
   
@@ -179,7 +178,7 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
   return (
 
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-30" onClick={handleOverlayClick}>
-      <div className="relative flex flex-col bg-white rounded-lg overflow-auto shadow-lg w-full md:w-fit h-full md:h-fit p-10" onClick={(e) => e.stopPropagation()}>
+      <div className="relative flex flex-col bg-white rounded-lg shadow-lg w-full md:w-fit h-full md:h-140 my-10 p-10 overflow-scroll [&::-webkit-scrollbar]:hidden scrollbar-thin scrollbar-none" onClick={(e) => e.stopPropagation()}>
         <button
           className="absolute flex cursor-pointer items-center justify-center top-5 right-5 w-10 h-10"
           onClick={onClose}
@@ -302,7 +301,7 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
     className="mr-2 accent-[#E19517] scale-120"
   />
   <label htmlFor="editPassword" className="text-sm text-[#240C03]">
-    Edit Password
+    Change Password
   </label>
 </div>
 

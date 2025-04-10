@@ -3,12 +3,15 @@ import { useEffect, useState } from "react";
 import FilterButtons from "../components/model/filter-buttons";
 import { supabase } from "../lib/supabase";
 import ProductCard from "../components/model/product-card";
+import ViewProductModal from "../components/modal/viewProduct_modal";
 
 export default function Home() {
   const [activeFilter, setActiveFilter] = useState<string>("All");
   const [categories, setCategories] = useState<{ categoryid: number; name: string }[]>([]);
   const [products, setProducts] = useState<any[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<any[]>([]);
+  const [showViewProductModal, setViewProductModal] = useState(false);
+  const [productId, setProductId] = useState<number>(0);
 
   // Function to handle filter
   const handleFilter = (filterName: string) => {
@@ -62,7 +65,7 @@ export default function Home() {
         <span className="font-bold text-2xl md:text-4xl text-[#240C03] text-end">
           Menu
         </span>
-        <div className="flex gap-x-2 my-5">
+        <div className="flex gap-x-2 my-5 overflow-scroll [&::-webkit-scrollbar]:hidden scrollbar-thin scrollbar-none">
           {/* Filter Buttons */}
           <FilterButtons
             text="All"
@@ -78,17 +81,20 @@ export default function Home() {
             />
           ))}
         </div>
-        {/* Displaying filtered products */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-0 py-0">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5 px-0 py-0">
           {filteredProducts.map((product) => (
             <ProductCard
               key={product.productid}
               productId={product.productid}
               className="w-full max-w-xs"
               category={product.category.name}
+              onClicked={() => {setViewProductModal(true); setProductId(product.productid)}}
             />
           ))}
         </div>
+        {showViewProductModal && (
+                <ViewProductModal onClose={() => setViewProductModal(false)} productId={productId}/>
+              )}
       </div>
     </>
   );

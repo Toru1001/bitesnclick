@@ -69,6 +69,7 @@ const ProductSection: React.FC = () => {
                         productId={product.productid}
                         className="w-full max-w-xs"
                         category={product.category.name}
+                        onClicked={() => setProducts([1,2])}
                       />
                     ))}
         </div>

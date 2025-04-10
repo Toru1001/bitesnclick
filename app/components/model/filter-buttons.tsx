@@ -13,11 +13,11 @@ const FilterButtons: React.FC<FilterButtonsProps> = ({
 }) => {
   return (
     <button
-      className={`border-2 border-[#E19517] rounded-sm py-1 px-4 cursor-pointer font-medium 
+      className={`border-2 border-[#E19517] w-fit rounded-sm py-1 px-4 cursor-pointer font-medium 
         ${isActive ? "text-amber-50 bg-[#E19517]" : "text-[#E19517]"}`}
       onClick={onClick}
     >
-      <span>{text}</span>
+      <span className="text-xs md:text-sm">{text}</span>
     </button>
   );
 };
