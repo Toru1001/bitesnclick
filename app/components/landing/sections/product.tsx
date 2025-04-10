@@ -1,11 +1,30 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import ProductCard from "../../model/product-card";
+import { supabase } from "@/app/lib/supabase";
 
 const ProductSection: React.FC = () => {
+  const [products, setProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+      const fetchProducts = async () => {
+            const { data, error } = await supabase
+              .from('products')
+              .select('*, category(categoryid,name)')
+              .order('productid', { ascending: false })
+              .limit(4);
+      
+            if (error) {
+              console.error("Error fetching products:", error);
+            } else {
+              setProducts(data);
+            }
+          };
+          fetchProducts();
+  }, []);
+  
   return (
     <div className="flex flex-col relative h-fit px-6 md:px-30 mb-5">
-      {/* Background Images */}
       <Image
         className="hidden md:block absolute top-0 right-0 z-0"
         src="/assets/topbeans.png"
@@ -42,37 +61,16 @@ const ProductSection: React.FC = () => {
         </div>
       </div>
 
-      {/* Product Cards Section (Scrollable on Small Screens) */}
       <div className="overflow-x-auto overflow-visible scrollbar-hide h-full w-full pb-3 pt-10 [&::-webkit-scrollbar]:hidden scrollbar-thin scrollbar-none">
         <div className="flex gap-4 flex-nowrap scroll-smooth scroll-snap-x-mandatory">
-          <ProductCard
-            price={110}
-            category="Espresso"
-            image="/assets/coffee1.png"
-            itemName="Americano"
-            description="Boost your productivity and build your mood with a short."
-          />
-          <ProductCard
-            price={110}
-            category="Espresso"
-            image="/assets/matcha.png"
-            itemName="Matcha Einspanner"
-            description="Boost your productivity and build your mood with a short."
-          />
-          <ProductCard
-            price={110}
-            category="Espresso"
-            image="/assets/coffee3.png"
-            itemName="Pink Milk + Espresso"
-            description="Boost your productivity and build your mood with a short."
-          />
-          <ProductCard
-            price={110}
-            category="Espresso"
-            image="/assets/coffee2.png"
-            itemName="Matcha Einspanner"
-            description="Boost your productivity and build your mood with a short."
-          />
+          {products.map((product) => (
+                      <ProductCard
+                        key={product.productid}
+                        productId={product.productid}
+                        className="w-full max-w-xs"
+                        category={product.category.name}
+                      />
+                    ))}
         </div>
       </div>
     </div>

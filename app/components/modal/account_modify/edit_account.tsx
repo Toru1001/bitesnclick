@@ -19,8 +19,6 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const [showDeleteConfirmationModal, setShowDeleteConfirmationModal] = useState(false);
-  const [deletePassword, setDeletePassword] = useState('');
-  const [showDeletePassword, setShowDeletePassword] = useState(false);
 
   const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
