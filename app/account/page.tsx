@@ -3,11 +3,15 @@ import React, { useEffect, useState } from "react";
 import { CircleUserRoundIcon } from "lucide-react";
 import { supabase } from "@/app/lib/supabase";
 import { ClipLoader } from "react-spinners";
+import EditAccountModal from "../components/modal/account_modify/edit_account";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const [customerDetails, setCustomerDetails] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editModalOpen, setEditModalOpen] = React.useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const fetchCustomerDetails = async () => {
@@ -29,6 +33,7 @@ export default function Home() {
           setCustomerDetails(data);
         }
       } else {
+        router.replace('/');
         setError("User not logged in.");
       }
       setLoading(false);
@@ -71,7 +76,7 @@ export default function Home() {
                 </span>
               </div>
             </div>
-            <button className="items-center mt-5 md:mt-0 text-amber-50 font-xs h-10 bg-[#E19517]  hover:bg-amber-600 rounded-4xl px-5 cursor-pointer">
+            <button onClick={() => setEditModalOpen(true)} className="items-center mt-5 md:mt-0 text-amber-50 font-xs h-10 bg-[#E19517]  hover:bg-amber-600 rounded-4xl px-5 cursor-pointer">
               Edit
             </button>
           </div>
@@ -211,6 +216,7 @@ export default function Home() {
           </div>
         </div>
       </div>
+      {editModalOpen && <EditAccountModal onClose={() => setEditModalOpen(false)} />}
     </>
   );
 }
