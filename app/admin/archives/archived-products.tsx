@@ -3,11 +3,9 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { FaEllipsisV } from 'react-icons/fa';
-import EditProductModal from './edit-products';
-import SetAvailabilityModal from './set-availability';
+import EditProductModal from '../products/edit-products';
 
-
-export interface Product {
+interface Product {
   productid: number;
   name: string;
   price: number;
@@ -17,17 +15,14 @@ export interface Product {
   isarchive: boolean;
 }
 
-const ViewProduct = () => {
-  const [products, setProducts] = useState<any[]>([]);
+const ArchivedProducts = () => {
+  const [archivedProducts, setArchivedProducts] = useState<any[]>([]);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [dropdownOpenId, setDropdownOpenId] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [availabilityModalOpen, setAvailabilityModalOpen] = useState(false);
-const [productForAvailability, setProductForAvailability] = useState<Product | null>(null);
 
-
-  const fetchProducts = async () => {
+  const fetchArchivedProducts = async () => {
     const { data, error } = await supabase
       .from('products')
       .select(`
@@ -38,42 +33,38 @@ const [productForAvailability, setProductForAvailability] = useState<Product | n
         img,
         category:categoryid(name),
         isarchive
-      `).eq('isarchive', false);
+      `)
+      .eq('isarchive', true);
 
     if (error) {
-      console.error('Error fetching products:', error.message);
-      setError('Failed to load products');
+      console.error('Error fetching archived products:', error.message);
+      setError('Failed to load archived products');
     } else {
-      setProducts(data);
+      setArchivedProducts(data);
+    }
+  };
+
+  const unarchiveProduct = async (product: Product) => {
+    const { error } = await supabase
+      .from('products')
+      .update({ isarchive: false })
+      .eq('productid', product.productid);
+
+    if (error) {
+      console.error('Error unarchiving product:', error.message);
+    } else {
+      fetchArchivedProducts();
     }
   };
 
   useEffect(() => {
-    fetchProducts();
+    fetchArchivedProducts();
   }, []);
-
-  const getAvailability = (isarchive: boolean) => {
-    return isarchive ? 'Unavailable' : 'Available';
-  };
-
-  const archiveProduct = async (product: Product) => {
-    const { error } = await supabase
-      .from('products')
-      .update({ isarchive: true })
-      .eq('productid', product.productid);
-  
-    if (error) {
-      console.error('Error archiving product:', error.message);
-    } else {
-      fetchProducts();
-    }
-  };
-  
 
   return (
     <div className="flex justify-center mt-10">
       <div className="bg-white p-6 rounded shadow-md mt-10 w-full max-w-6xl">
-        <h2 className="text-xl font-bold mb-4">Menu Products</h2>
+        <h2 className="text-xl font-bold mb-4">Archived Products</h2>
         {error && <p className="text-red-500">{error}</p>}
 
         <table className="w-full table-auto border">
@@ -83,12 +74,11 @@ const [productForAvailability, setProductForAvailability] = useState<Product | n
               <th className="px-4 py-2 text-left">Description</th>
               <th className="px-4 py-2 text-left">Category</th>
               <th className="px-4 py-2 text-left">Price</th>
-              <th className="px-4 py-2 text-left">Availability</th>
               <th className="px-4 py-2 text-left">Action</th>
             </tr>
           </thead>
           <tbody>
-            {products.map((product) => (
+            {archivedProducts.map((product) => (
               <tr key={product.productid} className="border-t hover:bg-gray-50">
                 <td className="px-4 py-2">{product.name}</td>
                 <td className="px-4 py-2">
@@ -98,7 +88,6 @@ const [productForAvailability, setProductForAvailability] = useState<Product | n
                 </td>
                 <td className="px-4 py-2">{product.category?.name || 'Uncategorized'}</td>
                 <td className="px-4 py-2">₱{product.price.toFixed(2)}</td>
-                <td className="px-4 py-2">{getAvailability(product.isarchive)}</td>
                 <td className="px-4 py-2 relative">
                   <button
                     onClick={() =>
@@ -130,22 +119,13 @@ const [productForAvailability, setProductForAvailability] = useState<Product | n
                         Edit
                       </button>
                       <button
-                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
                         onClick={() => {
-                          setProductForAvailability(product);
-                          setAvailabilityModalOpen(true);
-                         }}
-                      >
-                        Set Availability
-                      </button>
-                      <button
-                        onClick={() => {
-                          archiveProduct(product);
+                          unarchiveProduct(product);
                           setDropdownOpenId(null);
                         }}
-                        className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50"
+                        className="w-full px-4 py-2 text-left text-green-600 hover:bg-green-50"
                       >
-                        Archive
+                        Unarchive
                       </button>
                     </div>
                   )}
@@ -159,7 +139,7 @@ const [productForAvailability, setProductForAvailability] = useState<Product | n
           <EditProductModal
             product={editingProduct}
             onClose={() => setEditingProduct(null)}
-            onSave={fetchProducts}
+            onSave={fetchArchivedProducts}
           />
         )}
 
@@ -194,15 +174,6 @@ const [productForAvailability, setProductForAvailability] = useState<Product | n
 
                   <h2 className="text-xl font-bold mb-2">Category</h2>
                   <p className="text-gray-700 mb-4">{selectedProduct.category?.name}</p>
-
-                  <h2 className="text-xl font-bold mb-2">Availability</h2>
-                  <span
-                    className={`inline-block ${
-                      selectedProduct.isarchive ? 'bg-red-500' : 'bg-blue-500'
-                    } text-white text-sm px-3 py-1 rounded-full`}
-                  >
-                    {selectedProduct.isarchive ? 'Unavailable' : 'Available'}
-                  </span>
                 </div>
               </div>
 
@@ -232,24 +203,8 @@ const [productForAvailability, setProductForAvailability] = useState<Product | n
           </div>
         )}
       </div>
-      {availabilityModalOpen && productForAvailability && (
-  <SetAvailabilityModal
-          product={productForAvailability}
-          onClose={() => {
-            setAvailabilityModalOpen(false);
-            setProductForAvailability(null);
-          } }
-          onSet={() => {
-            fetchProducts(); 
-            setAvailabilityModalOpen(false);
-            setProductForAvailability(null);
-          } } isOpen={availabilityModalOpen} currentStatus={true}  />
-)}
-
     </div>
-
-    
   );
 };
 
-export default ViewProduct;
+export default ArchivedProducts;

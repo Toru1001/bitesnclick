@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../../lib/supabase";
 import { MoreHorizontal } from "lucide-react";// Import the modal component
 import EditDiscount from "./edit_discounts";
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';    
-import { supabase } from "../lib/supabase";
+import { supabase } from "../../lib/supabase";
 
 const CreateDiscountForm = () => {
   const [products, setProducts] = useState<{ id: number; name: string; price: number }[]>([]);
