@@ -55,10 +55,10 @@ const PageHeader: React.FC<PageHeaderProps> = ({ session, setSession }) => {
       return (
         <>
           <div className="flex gap-x-5">
-            <button className="cursor-pointer text-amber-50 hover:text-[#E19517]">
+            <button className="cursor-pointer text-amber-50 hover:text-[#E19517]" onClick={() => router.push("/cart")}>
               <ShoppingCart size={32}> </ShoppingCart>
             </button>
-            <button className="cursor-pointer text-amber-50 hover:text-[#E19517]">
+            <button className="cursor-pointer text-amber-50 hover:text-[#E19517]" onClick={() => router.push("/orders")}>
               <Truck size={32}></Truck>
             </button>
             <Menu as="div" className="relative inline-block text-left">

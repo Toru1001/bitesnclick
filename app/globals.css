@@ -1,1 +1,22 @@
 @import "tailwindcss";
+
+@layer utilities {
+  .border-gradient-dash {
+    background-image: repeating-linear-gradient(
+      to right,
+      #E19517 0 40px,    
+      #f1f1f1 40px 52px,  
+      #7B5137 52px 92px, 
+      #f1f1f1 92px 104px 
+    );
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask-composite: exclude;
+    background-origin: border-box;
+    background-clip: border-box;
+  }
+}
