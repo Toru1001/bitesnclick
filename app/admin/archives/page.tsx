@@ -1,11 +1,10 @@
-import CreateVoucher from "./create_vouchers";
-
+import ArchivedProducts from "./archived-products";
 
 export default function Home() {
     return (
       <div className="max-w-lg mx-auto mt-10">
-      <CreateVoucher />
+        
+      <ArchivedProducts />
     </div>
     );
   }
-  
