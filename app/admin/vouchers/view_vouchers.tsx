@@ -70,17 +70,17 @@ const ViewVouchers = () => {
       setVoucherPercent(0);
       setStartDate('');
       setEndDate('');
-      await fetchVouchers(); // Refresh the list
+      await fetchVouchers();
     }
   };
 
-  const generateCode = () => {  //generating random code 
+  const generateCode = () => { 
     const random = Math.random().toString(36).substring(2, 8).toUpperCase();
     const prefix = voucherName.replace(/\s/g, '').slice(0, 4).toUpperCase();
     setCode(`${prefix}${random}`);
   };
 
-  const getStatus = (start: string, end: string) => {   // calculating status based on the date 
+  const getStatus = (start: string, end: string) => {   
     const now = new Date();
     const s = new Date(start);
     const e = new Date(end);
@@ -90,8 +90,7 @@ const ViewVouchers = () => {
   };
 
   return (
-    <div className="bg-white p-6 rounded shadow-md mt-10">
-      <h2 className="text-xl font-bold mb-4">Available Vouchers</h2>
+    <div className="bg-white  rounded shadow-md">
       <table className="min-w-full table-auto border">
         <thead>
           <tr className="bg-gray-200">

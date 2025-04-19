@@ -1,6 +1,10 @@
 export default function Home() {
     return (
-      <h1>Admin Page</h1>
+      <>
+      <div className="max-w-lg mx-auto mt-10">
+        test
+        </div>
+      </>
     );
   }
   

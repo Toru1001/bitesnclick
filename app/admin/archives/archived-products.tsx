@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import { FaEllipsisV } from 'react-icons/fa';
 import EditProductModal from '../products/edit-products';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faEllipsisV } from '@fortawesome/free-solid-svg-icons';
 
 interface Product {
   productid: number;
@@ -62,9 +63,8 @@ const ArchivedProducts = () => {
   }, []);
 
   return (
-    <div className="flex justify-center mt-10">
-      <div className="bg-white p-6 rounded shadow-md mt-10 w-full max-w-6xl">
-        <h2 className="text-xl font-bold mb-4">Archived Products</h2>
+    <div className="flex justify-center mt-5">
+      <div className="bg-white rounded shadow-md w-full">
         {error && <p className="text-red-500">{error}</p>}
 
         <table className="w-full table-auto border">
@@ -95,7 +95,7 @@ const ArchivedProducts = () => {
                     }
                     className="text-gray-600 hover:text-black focus:outline-none"
                   >
-                    <FaEllipsisV />
+                    <FontAwesomeIcon icon={faEllipsisV} className="text-lg" />
                   </button>
 
                   {dropdownOpenId === product.productid && (

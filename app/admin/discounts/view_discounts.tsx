@@ -48,9 +48,7 @@ const ViewDiscounts = () => {
   
 
   return (
-    <div className="bg-white p-6 rounded shadow-md mt-10">
-      <h2 className="text-xl font-semibold mb-4">Discount List</h2>
-
+    <div className="bg-white rounded shadow-md">
       <table className="table-fixed w-full">
         <thead className="bg-gray-100">
           <tr>

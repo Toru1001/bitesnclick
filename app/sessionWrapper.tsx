@@ -6,6 +6,7 @@ import { Session } from "@supabase/supabase-js";
 import PageHeader from "@/app/components/header/pageHeader";
 import { ClipLoader } from "react-spinners";
 import { usePathname } from "next/navigation";
+import AdminSidebar from "./admin/admin-components/admin-sidebar";
 
 export default function SessionWrapper({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -41,11 +42,15 @@ export default function SessionWrapper({ children }: { children: React.ReactNode
     );
   }
 
-  const hideHeader = pathname.startsWith("/admin");
+  const isAdminPath = pathname.startsWith("/admin");
 
   return (
     <>
-      {!hideHeader && <PageHeader session={session} setSession={setSession} />}
+      {isAdminPath ? (
+        <AdminSidebar />
+      ) : (
+        <PageHeader session={session} setSession={setSession} />
+      )}
       <main>{children}</main>
     </>
   );

@@ -71,9 +71,8 @@ const [productForAvailability, setProductForAvailability] = useState<Product | n
   
 
   return (
-    <div className="flex justify-center mt-10">
-      <div className="bg-white p-6 rounded shadow-md mt-10 w-full max-w-6xl">
-        <h2 className="text-xl font-bold mb-4">Menu Products</h2>
+    <div className="flex items-center">
+      <div className="bg-white rounded shadow-md w-full max-w-7xl">
         {error && <p className="text-red-500">{error}</p>}
 
         <table className="w-full table-auto border">
