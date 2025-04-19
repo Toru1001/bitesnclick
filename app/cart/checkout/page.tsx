@@ -1,21 +1,33 @@
 "use client";
-import ChangeAddressModal from "@/app/components/modal/changeAddress_modal";
+import ChangeAddressModal from "@/app/components/modal/orders_modify/changeAddress_modal";
 import OrderedProductsCard from "@/app/components/model/ordered-products-card";
 import { MapPin, MessageCircleMore, CreditCard } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/app/lib/supabase";
 import ClipLoader from "react-spinners/ClipLoader";
-import PaymentMethodModal from "@/app/components/modal/payment_method_modal";
-
+import PaymentMethodModal from "@/app/components/modal/orders_modify/payment_method_modal";
+import InputVoucherModal from "@/app/components/modal/orders_modify/inputVoucher_modal";
+import { useRouter } from "next/dist/client/components/navigation";
+import PaymentModal from "@/app/components/modal/orders_modify/payment_modal";
+import SuccessModal from "@/app/components/modal/success_modal";
 
 export default function Home() {
+  const router = useRouter();
   const [changeAdress, setChangeAddress] = useState(false);
   const [showPaymentMethodModal, setPaymentMethodModal] = useState(false);
+  const [showInputVoucherModal, setInputVoucherModal] = useState(false);
+  const [paymentModal, setPaymentModal] = useState(false);
   const [customerData, setCustomerData] = useState<any>(null);
+  const [voucherDiscount, setVoucherDiscount] = useState<number>(0);
+  const [finalPrice, setfinalPrice] = useState<number>(0);
   const [cartItemsId, setCartItemsId] = useState<string[] | null>(null);
   const [cartId, setCartId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [confirmedPayment, setConfirmedPayment] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
+  const [paymentImage, setPaymentImage] = useState<string | null>(null);
+  const [voucherCode, setVoucherCode] = useState<string | null>(null);
+  const [successModal, setSuccessModal] = useState(false);
   const [showtotalPrice, setTotalPrice] = useState<number>(0);
   const [address, setAddress] = useState<{
     street: string;
@@ -23,6 +35,64 @@ export default function Home() {
     city: string;
     zipcode: string;
   } | null>(null);
+
+  const calculateFinalPrice = (totalPrice: number, discount: number) => {
+    if (totalPrice === 0) {
+      setfinalPrice(0);
+      return;
+    }
+    if (discount === 0) {
+      setfinalPrice(totalPrice + 40);
+      return;
+    }
+    const amountWithDelivery = totalPrice + 40;
+    const discountAmount = (amountWithDelivery * discount) / 100;
+    const totalAmount = amountWithDelivery - discountAmount;
+    setfinalPrice(totalAmount);
+  };
+
+  const calculateTotalPrice = async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        console.warn("User not authenticated");
+        return;
+      }
+
+      const { data: cartData, error: cartError } = await supabase
+        .from("cart")
+        .select("cartid")
+        .eq("customerid", user.id)
+        .single();
+
+      if (cartError || !cartData) {
+        console.warn("Cannot calculate total price: cartId not found");
+        return;
+      }
+
+      const cartId = cartData.cartid;
+      console.log("Calculating total price for cart ID:", cartId);
+
+      const { data: cartItems, error: itemsError } = await supabase
+        .from("cart_items")
+        .select("total_price")
+        .eq("cartid", cartId);
+
+      if (itemsError) throw itemsError;
+
+      const totalPrice = cartItems.reduce(
+        (sum, item) => sum + item.total_price,
+        0
+      );
+
+      setTotalPrice(totalPrice);
+    } catch (error) {
+      console.error("Error calculating total price:", error);
+    }
+  };
 
   useEffect(() => {
     const fetchCustomerData = async () => {
@@ -48,7 +118,7 @@ export default function Home() {
       });
       return data;
     };
-    
+
     async function fetchCartData() {
       try {
         const {
@@ -95,51 +165,12 @@ export default function Home() {
         setLoading(false);
       }
     }
+
     fetchCartData();
     fetchCustomerData();
     calculateTotalPrice();
+    calculateFinalPrice(showtotalPrice, voucherDiscount);
   }, []);
-
-const calculateTotalPrice = async () => {
-    try {
-        const {
-            data: { user },
-        } = await supabase.auth.getUser();
-
-        if (!user) {
-            console.warn("User not authenticated");
-            return;
-        }
-
-        const { data: cartData, error: cartError } = await supabase
-            .from("cart")
-            .select("cartid")
-            .eq("customerid", user.id)
-            .single();
-
-        if (cartError || !cartData) {
-            console.warn("Cannot calculate total price: cartId not found");
-            return;
-        }
-
-        const cartId = cartData.cartid;
-        console.log("Calculating total price for cart ID:", cartId);
-
-        const { data: cartItems, error: itemsError } = await supabase
-            .from("cart_items")
-            .select("total_price")
-            .eq("cartid", cartId);
-
-        if (itemsError) throw itemsError;
-
-        const totalPrice = cartItems.reduce((sum, item) => sum + item.total_price, 0);
-
-        console.log("Total Price:", totalPrice);
-        setTotalPrice(totalPrice);
-    } catch (error) {
-        console.error("Error calculating total price:", error);
-    }
-};
 
   if (loading) {
     return (
@@ -153,10 +184,184 @@ const calculateTotalPrice = async () => {
     setAddress(newAddress);
   };
 
+  const handleVoucherChange = async (voucher: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("vouchers")
+        .select("*")
+        .eq("code", voucher)
+        .single();
+
+      if (error) {
+        console.error("Error fetching voucher:", error);
+        return;
+      }
+
+      if (data) {
+        setVoucherDiscount(data.percent);
+        setVoucherCode(voucher);
+        calculateFinalPrice(showtotalPrice, data.percent);
+      } else {
+        console.log("No voucher found with the given code.");
+      }
+    } catch (error) {
+      console.error("Error fetching voucher:", error);
+    }
+  };
+
   const handlePaymentMethodChange = (method: string) => {
     console.log("Selected payment method:", method);
     setPaymentMethod(method);
-  }
+  };
+
+  const handleSubmit = () => {
+    if (paymentMethod === "GCASH" && !confirmedPayment) {
+      setPaymentModal(true);
+    } else {
+      placeOrder();
+    }
+  };
+
+  const handleImageUpload = (imageUrl: string) => {
+    setConfirmedPayment(true);
+    setPaymentImage(imageUrl);
+    if (paymentMethod === "GCASH") {
+      placeOrder();
+    }
+  };
+
+  const placeOrder = async () => {
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        console.warn("User not authenticated");
+        return;
+      }
+
+      if (!paymentMethod) {
+        alert("Please select a payment method before placing the order.");
+        return;
+      }
+
+      let voucherId = null;
+
+      if (voucherCode) {
+        const { data: voucherData, error: voucherError } = await supabase
+          .from("vouchers")
+          .select("voucherid")
+          .eq("code", voucherCode)
+          .single();
+
+        if (voucherError) {
+          console.error("Error fetching voucher ID:", voucherError);
+        } else {
+          voucherId = voucherData?.voucherid || null;
+        }
+      }
+
+      const messageElement =
+        document.querySelector<HTMLTextAreaElement>("textarea");
+      const message = messageElement?.value || "";
+
+      const orderData = {
+        order_status: "Pending",
+        order_date: new Date().toISOString(),
+        order_price:
+          finalPrice === 0
+            ? (showtotalPrice + 40).toFixed(2)
+            : finalPrice.toFixed(2),
+        message: message,
+        delivery_address: `${address?.street}, ${address?.barangay}, ${address?.city}, Davao Del Sur, ${address?.zipcode}`,
+        customerid: user.id,
+        voucherid: voucherId,
+        paymentMethod: paymentMethod,
+        payment_img: paymentImage,
+      };
+
+      const { data: orderInsertData, error: orderError } = await supabase
+        .from("orders")
+        .insert(orderData)
+        .select("orderid")
+        .single();
+
+      if (orderError) {
+        console.error("Error placing order:", orderError);
+        return;
+      }
+
+      const orderId = orderInsertData?.orderid;
+
+      if (!orderId) {
+        console.error("Order ID not returned after order insertion.");
+        return;
+      }
+
+      if (voucherId) {
+        const { error: updateVoucherError } = await supabase
+          .from("vouchers")
+          .update({ status: "used" })
+          .eq("voucherid", voucherId);
+
+        if (updateVoucherError) {
+          console.error("Error updating voucher status:", updateVoucherError);
+          return;
+        }
+      }
+
+      const { data: cartItems, error: cartItemsError } = await supabase
+        .from("cart_items")
+        .select("productid, total_price, quantity")
+        .eq("cartid", cartId);
+
+      if (cartItemsError) {
+        console.error("Error fetching cart items:", cartItemsError);
+        return;
+      }
+
+      if (cartItems && cartItems.length > 0) {
+        const orderDetailsData = cartItems.map((item) => ({
+          orderid: orderId,
+          productid: item.productid,
+          price: item.total_price,
+          quantity: item.quantity,
+        }));
+
+        const { error: orderDetailsError } = await supabase
+          .from("orderdetails")
+          .insert(orderDetailsData);
+
+        if (orderDetailsError) {
+          console.error("Error inserting order details:", orderDetailsError);
+          return;
+        }
+
+        const { error: deleteCartItemsError } = await supabase
+          .from("cart_items")
+          .delete()
+          .eq("cartid", cartId);
+
+        if (deleteCartItemsError) {
+          console.error("Error deleting cart items:", deleteCartItemsError);
+          return;
+        }
+      }
+      
+      setSuccessModal(true);
+      console.log(
+        "Order placed, order details inserted, and cart cleared successfully!"
+      );
+
+      setTimeout(() => {
+        setSuccessModal(false);
+        router.push("/");
+      }, 4000);
+    } catch (error) {
+      console.error("Unexpected error placing order:", error);
+    }
+  };
 
   return (
     <>
@@ -241,24 +446,40 @@ const calculateTotalPrice = async () => {
                   <CreditCard className="text-[#E19517] w-6 h-6" />
                   <span className="text-lg">Method of Payment</span>
                 </div>
-                <button className="border-2 border-[#E19517] rounded-lg h-fit py-2 px-5 hover:bg-[#E19517] hover:text-amber-50 cursor-pointer text-[#E19517] text-sm font-medium ease-in-out duration-200" onClick={() => setPaymentMethodModal(true)}>
+                <button
+                  className="border-2 border-[#E19517] rounded-lg h-fit py-2 px-5 hover:bg-[#E19517] hover:text-amber-50 cursor-pointer text-[#E19517] text-sm font-medium ease-in-out duration-200"
+                  onClick={() => setPaymentMethodModal(true)}
+                >
                   Select
                 </button>
               </div>
-              <div className="px-5 py-1 flex justify-end bg-[#E19517]/30 cursor-pointer">
+              <div
+                className="px-5 py-1 flex justify-end bg-[#E19517]/30 cursor-pointer"
+                onClick={() => setInputVoucherModal(true)}
+              >
                 <span className="text-sm text-gray-700 font-light">
                   {"Add Voucher >>"}
                 </span>
               </div>
               <div className="flex justify-between mx-10 mt-2">
-                <div className="flex gap-x-5">
-                  <span className="text-lg">Method: </span>
-                  <span className="text-lg text-gray-500">{paymentMethod}</span>
+                <div className="flex flex-col gap-y-2">
+                  <div className="flex gap-x-5">
+                    <span className="text-lg">Method: </span>
+                    <span className="text-lg text-gray-500">
+                      {paymentMethod}
+                    </span>
+                  </div>
+                  <div className="flex gap-x-5">
+                    <span className="text-lg">Voucher: </span>
+                    <span className="text-lg text-gray-500">{voucherCode}</span>
+                  </div>
                 </div>
                 <div className="flex flex-col gap-y-4">
                   <div className="flex justify-between gap-x-10">
                     <span>Product subtotal:</span>
-                    <span className="text-gray-600">₱ {showtotalPrice.toFixed(2)}</span>
+                    <span className="text-gray-600">
+                      ₱ {showtotalPrice.toFixed(2)}
+                    </span>
                   </div>
                   <div className="flex justify-between">
                     <span>Delivery fee:</span>
@@ -267,13 +488,16 @@ const calculateTotalPrice = async () => {
                   <div className="flex justify-between items-end">
                     <span>Voucher:</span>
                     <span className="border-b-1 text-right w-30 border-gray-500 text-gray-600">
-                      40 %
+                      {voucherDiscount} %
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-2xl">Total:</span>
                     <span className="text-2xl text-[#E19517] font-semibold">
-                      ₱ 40.00
+                      ₱{" "}
+                      {finalPrice === 0
+                        ? (showtotalPrice + 40).toFixed(2)
+                        : finalPrice.toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -282,7 +506,10 @@ const calculateTotalPrice = async () => {
           </div>
         </div>
         <div className="flex justify-end my-5">
-          <button className="flex gap-x-2 items-center text-2xl font-semibold text-amber-50 bg-[#E19517] rounded-lg px-5 py-2 cursor-pointer mt-5">
+          <button
+            className="flex gap-x-2 items-center text-2xl font-semibold text-amber-50 bg-[#E19517] rounded-lg px-5 py-2 cursor-pointer mt-5"
+            onClick={handleSubmit}
+          >
             Place Order
           </button>
         </div>
@@ -299,7 +526,26 @@ const calculateTotalPrice = async () => {
       )}
       {showPaymentMethodModal && (
         <PaymentMethodModal
-                  onClose={() => setPaymentMethodModal(false)} onSelectPaymentMethod={handlePaymentMethodChange} method={paymentMethod || ""}/>
+          onClose={() => setPaymentMethodModal(false)}
+          onSelectPaymentMethod={handlePaymentMethodChange}
+          method={paymentMethod || ""}
+        />
+      )}
+      {showInputVoucherModal && (
+        <InputVoucherModal
+          onClose={() => setInputVoucherModal(false)}
+          onVoucherApply={handleVoucherChange}
+          code={voucherCode || ""}
+        />
+      )}
+      {paymentModal && (
+        <PaymentModal
+          onClose={() => setPaymentModal(false)}
+          onImageUpload={handleImageUpload}
+        />
+      )}
+      {successModal && (
+        <SuccessModal onClose={() => setSuccessModal(false)}/>
       )}
     </>
   );

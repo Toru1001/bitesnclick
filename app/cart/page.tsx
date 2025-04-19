@@ -105,9 +105,18 @@ export default function Home() {
             <span className="text-gray-950">Order Total:</span>
             <span className="text-2xl text-[#E19517] font-semibold">₱ {showtotalPrice}.00</span>
           </div>
-          <button className="border-2 border-[#E19517] bg-[#E19517] px-5 py-3 rounded-lg cursor-pointer text-amber-50 font-medium" onClick={() => router.push("/cart/checkout")}>
+            <button
+            className="border-2 border-[#E19517] bg-[#E19517] px-5 py-3 rounded-lg cursor-pointer text-amber-50 font-medium"
+            onClick={() => {
+              if (showtotalPrice > 0) {
+              router.push("/cart/checkout");
+              } else {
+              alert("There are no items inside the cart.");
+              }
+            }}
+            >
             Check Out
-          </button>
+            </button>
         </div>
       </div>
     </>

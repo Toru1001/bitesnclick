@@ -1,9 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { Plus, Minus } from "lucide-react";
 import { supabase } from "@/app/lib/supabase";
-import ConfirmationModal from "../modal/confirmation_modal";
 
 interface OrderedProductsCardProps {
     cartitemsId: string;
@@ -15,7 +13,6 @@ const OrderedProductsCard: React.FC<OrderedProductsCardProps> = ({
     cartid
 }) => {
     const [quantity, setQuantity] = useState<number>(1);
-    const [showRemoveConfirmationModal, setShowRemoveConfirmationModal] = useState(false);
     const [product, setProduct] = useState<{
         name: string;
         price: number;
@@ -94,15 +91,6 @@ const OrderedProductsCard: React.FC<OrderedProductsCardProps> = ({
                     ₱ {(product.price * quantity).toFixed(2)}
                 </span>
             </div>
-            {/* {showRemoveConfirmationModal && (
-                <ConfirmationModal
-                    onClose={() => setShowRemoveConfirmationModal(false)}
-                    onConfirm={removeItem}
-                    buttonText="Remove"
-                    title="Remove Item"
-                    description="Are you sure you want to remove item on cart?"
-                />
-            )} */}
         </div>
     );
 };
