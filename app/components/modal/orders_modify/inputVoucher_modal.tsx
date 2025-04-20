@@ -119,7 +119,7 @@ const InputVoucherModal: React.FC<InputVoucherModalProps> = ({ onClose, onVouche
                   placeholder={selectedVoucher || 'Enter voucher code'}
                   value={selectedVoucher || ''}
                   onChange={(e) => setSelectedVoucher(e.target.value)}
-                  className="border-1 rounded-md p-2 mt-2"
+                  className="border-1 rounded-md p-2 mt-2 border-gray-500"
                 />
               </div>
             </div>

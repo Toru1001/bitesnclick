@@ -41,7 +41,7 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({ onClose, onSele
                     {/* Items Start Here */}
                     <div className="flex flex-col gap-y-2 mt-5 w-100">
                         <div
-                            className={`flex flex-col px-5 rounded-lg border-1 py-3 cursor-pointer ${
+                            className={`flex flex-col px-5 rounded-lg border-1 border-gray-500 py-3 cursor-pointer ${
                                 selectedMethod === 'Cash On Delivery' ? 'bg-[#E19517] text-amber-50' : ''
                             }`}
                             onClick={() => handleMethodClick('Cash On Delivery')}
@@ -50,7 +50,7 @@ const PaymentMethodModal: React.FC<PaymentMethodModalProps> = ({ onClose, onSele
                             <span>Pay upon delivery.</span>
                         </div>
                         <div
-                            className={`flex flex-col px-5 border-1 rounded-lg py-3 cursor-pointer ${
+                            className={`flex flex-col px-5 border-1 rounded-lg border-gray-500 py-3 cursor-pointer ${
                                 selectedMethod === 'GCASH' ? 'bg-[#E19517] text-amber-50' : ''
                             }`}
                             onClick={() => handleMethodClick('GCASH')}

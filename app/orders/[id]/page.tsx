@@ -14,13 +14,13 @@ import {
   RefreshCcwDot,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { supabase } from "@/app/lib/supabase";
 
 const OrderDetails: React.FC = () => {
   const id = Number(useParams().id);
-  const [orders, setOrders] = React.useState<any>(null);
-  const [subtotal, setSubtotal] = React.useState<number>(0);
+  const [orders, setOrders] = useState<any>(null);
+  const [subtotal, setSubtotal] = useState<number>(0);
   const router = useRouter();
 
   useEffect(() => {

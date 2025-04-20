@@ -55,6 +55,7 @@ const ViewTables = () => {
           date: order.order_date,
           price: order.order_price,
           status: order.order_status,
+          paymentMethod: order.paymentMethod,
         }));
         setOrderDetails(mappedOrders);
       }
@@ -95,7 +96,7 @@ const ViewTables = () => {
     <div className="p-4">
       <div className="flex items-center gap-4 mb-4">
         <Input
-          placeholder="Search by customer name"
+          placeholder="Search"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="w-1/3 border-1 border-gray-500"
@@ -134,6 +135,7 @@ const ViewTables = () => {
             <TableHead>Customer Name</TableHead>
             <TableHead>Delivery Address</TableHead>
             <TableHead>Date</TableHead>
+            <TableHead>Payment</TableHead>
             <TableHead>Price</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Actions</TableHead>
@@ -150,6 +152,7 @@ const ViewTables = () => {
                   : order.address}
               </TableCell>
               <TableCell>{order.date}</TableCell>
+              <TableCell>{order.paymentMethod}</TableCell>
               <TableCell>₱ {order.price.toFixed(2)}</TableCell>
               <TableCell>
                 <Select
@@ -219,6 +222,7 @@ const ViewTables = () => {
                 <Button
                   variant="outline"
                   className="border-1 border-[#E19517] text-[#E19517] hover:bg-[#E19517] hover:text-white font-semibold  text-xs rounded cursor-pointer"
+                  onClick={() => {router.push(`/admin/orders/${order.id}`)}}
                 >
                   View
                 </Button>

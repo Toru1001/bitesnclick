@@ -25,7 +25,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [confirmedPayment, setConfirmedPayment] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
-  const [paymentImage, setPaymentImage] = useState<string | null>(null);
+  const [paymentImage, setPaymentImage] = useState<string>("");
   const [voucherCode, setVoucherCode] = useState<string | null>(null);
   const [successModal, setSuccessModal] = useState(false);
   const [showtotalPrice, setTotalPrice] = useState<number>(0);
@@ -225,12 +225,13 @@ export default function Home() {
   const handleImageUpload = (imageUrl: string) => {
     setConfirmedPayment(true);
     setPaymentImage(imageUrl);
+    console.log(imageUrl);
     if (paymentMethod === "GCASH") {
       placeOrder();
     }
   };
 
-  const placeOrder = async () => {
+  const placeOrder = async ( imageUrl? : string) => {
     try {
       const {
         data: { user },
@@ -278,9 +279,9 @@ export default function Home() {
         customerid: user.id,
         voucherid: voucherId,
         paymentMethod: paymentMethod,
-        payment_img: paymentImage,
+        payment_img: imageUrl ?? null,
       };
-
+      console.log(imageUrl);
       const { data: orderInsertData, error: orderError } = await supabase
         .from("orders")
         .insert(orderData)
@@ -541,7 +542,7 @@ export default function Home() {
       {paymentModal && (
         <PaymentModal
           onClose={() => setPaymentModal(false)}
-          onImageUpload={handleImageUpload}
+          onImageUpload={placeOrder}
         />
       )}
       {successModal && (
