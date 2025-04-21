@@ -24,13 +24,13 @@ export default function Products() {
           >
             Add Product
           </button>
-          <Dialog>
+          {/* <Dialog>
           <DialogTrigger
             className=" border-2 border-[#E19517] text-[#E19517] hover:bg-[#E19517] hover:text-white font-semibold py-2 px-4 text-sm rounded-lg mt-5 mr-5 cursor-pointer">
             Show
           </DialogTrigger>
           <PopUpForm/>
-        </Dialog>
+        </Dialog> */}
         </div>
         
       </div>

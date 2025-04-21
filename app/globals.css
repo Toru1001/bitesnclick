@@ -24,6 +24,25 @@
   }
 }
 
+/* styles/globals.css */
+
+.Toastify__toast--success .Toastify__progress-bar {
+  background-color: #E19517; 
+}
+
+.Toastify__toast--error .Toastify__progress-bar {
+  background-color: #ef4444; 
+}
+
+.Toastify__toast--info .Toastify__progress-bar {
+  background-color: #3b82f6; 
+}
+
+.Toastify__toast--warning .Toastify__progress-bar {
+  background-color: #f59e0b;
+}
+
+
 @theme inline {
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);

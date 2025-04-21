@@ -143,7 +143,7 @@ const OrdersCard: React.FC<OrdersCardProps> = ({ orderId }) => {
                       Quantity: x{item.quantity}
                     </span>
                   </div>
-                  <span className="bg-[#D4A373] text-[#7B5137] px-3 py-1 rounded-lg text-xs font-semibold">
+                  <span className="bg-[#E19517] text-amber-50 w-fit px-3 py-1 rounded-lg text-xs font-semibold">
                     {item.products?.category?.name}
                   </span>
                 </div>

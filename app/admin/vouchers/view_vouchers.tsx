@@ -16,7 +16,7 @@ const ViewVouchers = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  const fetchVouchers = async () => { //fetching from database
+  const fetchVouchers = async () => { 
     const { data, error } = await supabase.from('vouchers').select('*');
     if (error) {
       console.error('Error fetching vouchers:', error.message);
@@ -80,12 +80,18 @@ const ViewVouchers = () => {
     setCode(`${prefix}${random}`);
   };
 
-  const getStatus = (start: string, end: string) => {   
+  const getStatus = (start: string, end: string, status: string) => {   
+    if (!start || !end || isNaN(Date.parse(start)) || isNaN(Date.parse(end))) {
+      return 'Invalid Dates';
+    }
+
     const now = new Date();
     const s = new Date(start);
     const e = new Date(end);
+
+    if (status === "used") return 'Used';
+    if (now >= s && now <= e) return 'Available';
     if (now < s) return 'Upcoming';
-    if (now >= s && now <= e) return 'Active';
     return 'Expired';
   };
 
@@ -111,7 +117,7 @@ const ViewVouchers = () => {
               <td className="px-4 py-2">{voucher.percent}%</td>
               <td className="px-4 py-2">{voucher.start_date}</td>
               <td className="px-4 py-2">{voucher.end_date}</td>
-              <td className="px-4 py-2">{getStatus(voucher.start_date, voucher.end_date)}</td>
+              <td className="px-4 py-2">{getStatus(voucher.start_date, voucher.end_date, voucher.status)}</td>
               <td className="px-4 py-2">
                 <button onClick={() => handleEdit(voucher)} className="text-blue-600 hover:text-blue-800">
                   <FaEdit />

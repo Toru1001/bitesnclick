@@ -16,6 +16,7 @@ import SignUpModal from "../modal/account_modify/signup_modal";
 import { Session } from "@supabase/supabase-js";
 import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
 import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
+import { ClipLoader } from "react-spinners";
 
 interface PageHeaderProps {
   session: Session | null;
@@ -24,6 +25,7 @@ interface PageHeaderProps {
 
 const PageHeader: React.FC<PageHeaderProps> = ({ session, setSession }) => {
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
 
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -43,6 +45,22 @@ const PageHeader: React.FC<PageHeaderProps> = ({ session, setSession }) => {
     router.push(url.pathname + url.search);
   };
 
+  const handleNavigation = (path: string) => {
+      setIsLoading(true);
+      startTransition(() => {
+        router.push(path);
+        setIsLoading(false);
+      });
+    };
+  
+    useEffect(() => {
+      const handleRouteChange = () => setIsLoading(false);
+      window.addEventListener("popstate", handleRouteChange);
+      return () => {
+        window.removeEventListener("popstate", handleRouteChange);
+      };
+    }, []);
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     setSession(null);
@@ -55,10 +73,16 @@ const PageHeader: React.FC<PageHeaderProps> = ({ session, setSession }) => {
       return (
         <>
           <div className="flex gap-x-5">
-            <button className="cursor-pointer text-amber-50 hover:text-[#E19517]" onClick={() => router.push("/cart")}>
+            <button
+              className="cursor-pointer text-amber-50 hover:text-[#E19517]"
+              onClick={() => handleNavigation("/cart")}
+            >
               <ShoppingCart size={32}> </ShoppingCart>
             </button>
-            <button className="cursor-pointer text-amber-50 hover:text-[#E19517]" onClick={() => router.push("/orders")}>
+            <button
+              className="cursor-pointer text-amber-50 hover:text-[#E19517]"
+              onClick={() => handleNavigation("/orders")}
+            >
               <Truck size={32}></Truck>
             </button>
             <Menu as="div" className="relative inline-block text-left">
@@ -127,13 +151,18 @@ const PageHeader: React.FC<PageHeaderProps> = ({ session, setSession }) => {
           if (target) {
             target.scrollIntoView({ behavior: "smooth" });
           }
-        }, 300); 
+        }, 300);
       });
     }
   };
 
   return (
     <>
+      {isLoading && (
+        <div className="fixed inset-0 bg-gray-950/50 bg-opacity-90 flex items-center justify-center z-50">
+            <div><ClipLoader color="#E19517" size={60} className="font-bold"/></div>
+        </div>
+      )}
       <header className="flex justify-between items-center h-20 bg-[#7B5137] px-6 md:px-30 relative z-20">
         {/* Mobile Header */}
         <div className="md:hidden flex w-full justify-between items-center">
@@ -159,13 +188,13 @@ const PageHeader: React.FC<PageHeaderProps> = ({ session, setSession }) => {
           </Link>
           <nav className="flex items-center gap-x-7">
             <button
-              onClick={() => router.push("/")}
+              onClick={() => handleNavigation("/")}
               className="text-amber-50 hover:text-[#E19517] font-light cursor-pointer"
             >
               Home
             </button>
             <button
-              onClick={() => router.push('/products')}
+              onClick={() => handleNavigation("/products")}
               className="text-amber-50 hover:text-[#E19517] font-light cursor-pointer"
             >
               Products
@@ -196,7 +225,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({ session, setSession }) => {
               : "-translate-y-10 opacity-0 pointer-events-none"
           }`}
         >
-           {[
+          {[
             { label: "Home", id: "" },
             { label: "Products", id: "products" },
             { label: "About Us", id: "about" },
@@ -207,13 +236,13 @@ const PageHeader: React.FC<PageHeaderProps> = ({ session, setSession }) => {
               className="text-amber-50 font-light cursor-pointer"
               onClick={() => {
                 setMenuOpen(false);
-                if (id === "products") router.push("/products");
+                if (id === "products") handleNavigation("/products");
                 else scrollToSection(id);
               }}
             >
               {label}
             </button>
-            ))}
+          ))}
 
           {session ? (
             <>

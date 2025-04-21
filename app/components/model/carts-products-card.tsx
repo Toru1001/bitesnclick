@@ -137,7 +137,7 @@ const CartProductsCard: React.FC<CartProductsCardProps> = ({
                     <span className="text-lg font-medium text-gray-950">
                         {product.name}
                     </span>
-                    <span className="bg-[#D4A373] text-[#7B5137] px-3 py-1 rounded-lg text-xs md:text-sm font-semibold">
+                    <span className="bg-[#E19517] text-amber-50 w-fit px-3 py-1 rounded-lg text-xs md:text-sm font-semibold">
                         {product.category}
                     </span>
                 </div>

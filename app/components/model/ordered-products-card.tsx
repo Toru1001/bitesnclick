@@ -76,7 +76,7 @@ const OrderedProductsCard: React.FC<OrderedProductsCardProps> = ({
                     <span className="text-lg font-medium text-gray-950">
                         {product.name}
                     </span>
-                    <span className="bg-[#D4A373] text-[#7B5137] px-3 py-1 rounded-lg text-xs md:text-sm font-semibold">
+                    <span className="bg-[#E19517] w-fit text-amber-50 px-3 py-1 rounded-lg text-xs md:text-sm font-semibold">
                         {product.category}
                     </span>
                 </div>

@@ -60,7 +60,7 @@ const CreateVoucherForm = () => {
                 placeholder="Enter Voucher Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full border p-2 rounded"
+                className="w-full border p-2 rounded border-gray-500"
               />
             </div>
 
@@ -72,7 +72,7 @@ const CreateVoucherForm = () => {
                   placeholder="Voucher Code"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
-                  className="flex-grow border p-2 rounded"
+                  className="flex-grow border p-2 rounded border-gray-500"
                 />
                 <button
                   type="button"
@@ -92,7 +92,7 @@ const CreateVoucherForm = () => {
                   placeholder="Discount"
                   value={percent}
                   onChange={(e) => setPercent(e.target.value)}
-                  className="border p-2 rounded w-30"
+                  className="border p-2 rounded w-30 border-gray-500"
                 />
                 <span>%</span>
               </div>
@@ -106,7 +106,7 @@ const CreateVoucherForm = () => {
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="w-full border p-2 rounded"
+                className="w-full border p-2 rounded border-gray-500"
               />
             </div>
 
@@ -116,7 +116,7 @@ const CreateVoucherForm = () => {
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="w-full border p-2 rounded"
+                className="w-full border p-2 rounded border-gray-500"
               />
             </div>
           </div>

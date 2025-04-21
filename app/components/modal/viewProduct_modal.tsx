@@ -5,16 +5,18 @@ import { Plus, Minus } from 'lucide-react';
 import { faCartPlus } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { supabase } from '@/app/lib/supabase';
+import { toast, ToastContainer } from 'react-toastify';
 
 interface ViewProductModalProps {
   onClose: () => void;
   productId: number;
+  onMessage?: (message: string) => void;
 }
 
-const ViewProductModal: React.FC<ViewProductModalProps> = ({ onClose, productId }) => {
+const ViewProductModal: React.FC<ViewProductModalProps> = ({ onClose, productId, onMessage }) => {
   const [quantity, setQuantity] = useState<number>(1);
   const [product, setProduct] = useState<any>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(true)
 
   useEffect(() => {
     const fetchProductDetails = async () => {
@@ -90,6 +92,7 @@ const ViewProductModal: React.FC<ViewProductModalProps> = ({ onClose, productId 
         console.error('Error adding item to cart:', cartItemError);
       } else {
         console.log('Item added to cart successfully');
+
         onClose();
       }
     } catch (error) {
@@ -165,7 +168,7 @@ const ViewProductModal: React.FC<ViewProductModalProps> = ({ onClose, productId 
                   </div>
                 </div>
                 <div className="flex justify-center my-5">
-                  <button className="flex gap-x-2 items-center text-xl text-amber-50 bg-[#E19517] rounded-lg px-5 py-2 cursor-pointer" onClick={handleAddToCart}>
+                  <button className="flex gap-x-2 items-center text-xl text-amber-50 bg-[#E19517] rounded-lg px-5 py-2 cursor-pointer" onClick={() =>{handleAddToCart(); onMessage?.("Item added to cart")}}>
                     <span>Add to cart</span>
                     <FontAwesomeIcon icon={faCartPlus} />
                   </button>
@@ -174,7 +177,7 @@ const ViewProductModal: React.FC<ViewProductModalProps> = ({ onClose, productId 
             </div>
           </div>
         )}
-      </div>
+      </div>  
     </div>
   );
 };

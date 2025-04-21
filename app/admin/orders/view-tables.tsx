@@ -40,7 +40,7 @@ const ViewTables = () => {
       const { data, error } = await supabase
         .from("orders")
         .select("*,customers(first_name, last_name)")
-        .order("orderid", { ascending: true });
+        .order("order_status", { ascending: true });
 
       if (error) {
         console.error("Error fetching orders:", error);
