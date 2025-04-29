@@ -48,7 +48,7 @@ const InputVoucherCard: React.FC<InputVoucherCardProps> = ({ voucherId, selected
           className={`flex flex-col px-4 py-2 border-1 rounded-lg ease-in-out duration-200 ${
             isExpired || isUsed
               ? 'bg-gray-500/40 border-gray-300 cursor-not-allowed'
-              : 'hover:bg-[#E19517] hover:text-amber-50 hover:[&_*]:text-white cursor-pointer'
+              : 'border-gray-400   hover:bg-[#E19517] hover:text-amber-50 hover:[&_*]:text-white cursor-pointer'
           }`}
           onClick={() => !isExpired && !isUsed && handleSelected(voucher.code)}
         >

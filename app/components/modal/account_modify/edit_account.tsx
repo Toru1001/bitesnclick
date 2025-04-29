@@ -3,6 +3,7 @@ import { Eye, EyeOff, X } from 'lucide-react';
 import router, { useRouter } from 'next/navigation';
 import React, { useState, useEffect, useRef } from 'react';
 import ConfirmationModal from '../confirmation_modal';
+import ClipLoader from 'react-spinners/ClipLoader';
 
 interface EditAccountModalProps {
   onClose: () => void;
@@ -19,6 +20,7 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const [showDeleteConfirmationModal, setShowDeleteConfirmationModal] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
@@ -27,6 +29,7 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
   };
 
   useEffect(() => {
+    setLoading(true);
     const fetchCustomerDetails = async () => {
       const {
         data: { user },
@@ -44,6 +47,7 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
           setError(error.message);
         } else {
           setCustomerDetails(data);
+          setLoading(false);
         }
       } else {
         router.replace('/');
@@ -53,6 +57,14 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
 
     fetchCustomerDetails();
   }, []);
+
+  // if (loading) {
+  //   return (
+  //     <div className="flex items-center justify-center h-screen">
+  //       <ClipLoader color="#E19517" size={50} />
+  //     </div>
+  //   );
+  // }
 
   const handleEditAccount = async () => {
     if (!formRef.current) return;
@@ -188,7 +200,12 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
         <div className="flex w-full justify-center border-b-3 pb-2 border-[#E19517]">
           <span className="font-semibold text-xl">Edit Profile</span>
         </div>
-        <div className="mx-5">
+        {loading ? (
+          <div className="flex items-center justify-center  w-110 h-90">
+            <ClipLoader color="#E19517" size={50} />
+          </div>
+        ) : (
+          <div className="mx-5">
     <form ref={formRef} className="space-y-2 mt-5 w-full" onSubmit={(e) => {
               e.preventDefault();
               setShowConfirmationModal(true);
@@ -319,7 +336,7 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
         type={showOldPassword ? "text" : "password"}
         id="oldPassword"
         name="oldPassword"
-        className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#E19517]"
+        className="w-full px-4 py-2 mt-1 border rounded-md border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E19517]"
       />
       <span
         onClick={() => setOldPassword(!showOldPassword)}
@@ -339,7 +356,7 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
         type={showPassword ? "text" : "password"}
         id="newPassword"
         name="newPassword"
-        className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#E19517]"
+        className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none border-gray-400 focus:ring-2 focus:ring-[#E19517]"
       />
       <span
         onClick={() => setShowPassword(!showPassword)}
@@ -360,7 +377,7 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
         type={showRePassword ? "text" : "password"}
         id="rePassword"
         name="rePassword"
-        className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#E19517]"
+        className="w-full px-4 py-2 mt-1 border rounded-md border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E19517]"
       />
       <span
         onClick={() => setReShowPassword(!showRePassword)}
@@ -395,6 +412,8 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
             </div>
           </form>
         </div>
+        )}
+        
       </div>
       {showConfirmationModal && (
         <ConfirmationModal

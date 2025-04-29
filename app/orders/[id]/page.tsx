@@ -116,7 +116,7 @@ const OrderDetails: React.FC = () => {
             className={`${color}`}
           />
         );
-      case "Paymnet info confirmed":
+      case "Payment info confirmed":
         return <RefreshCcwDot className={`${color}`} />;
       case "Brewing":
         return (

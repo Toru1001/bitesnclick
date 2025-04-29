@@ -26,7 +26,7 @@ const InputVoucherModal: React.FC<InputVoucherModalProps> = ({ onClose, onVouche
 
   const fetchVouchers = async () => {
     try {
-      const { data, error } = await supabase.from('vouchers').select('voucherid');
+      const { data, error } = await supabase.from('vouchers').select('voucherid').order('status', { ascending: false });
 
       if (error) {
         console.error('Error fetching vouchers:', error);

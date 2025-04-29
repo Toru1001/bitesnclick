@@ -79,7 +79,6 @@ const OrderDetails: React.FC = () => {
     }
   };
 
-  const handleViewPayment = (img: string) => {};
 
   useEffect(() => {
     fetchOrders();
@@ -158,10 +157,10 @@ const OrderDetails: React.FC = () => {
                     <img
                       src={orderDetails[0].payment_img}
                       alt="Product Preview"
-                      className="w-100 h-fit object-cover rounded-2xl"
+                      className="w-100 max-h-125 object-cover rounded-2xl"
                     />
                   )}
-                  <div className="flex w-full justify-end">
+                  <div className="flex w-full justify-end mt-3">
                     <a
                       href={orderDetails[0].payment_img}
                       target={orderDetails[0].payment_img}

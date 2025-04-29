@@ -1,5 +1,4 @@
 "use client";
-import { useRouter } from 'next/navigation'
 import CreateVoucherForm from './create_vouchers';
 
 export default function CreateVoucher() {

@@ -7,6 +7,7 @@ import PageHeader from "@/app/components/header/pageHeader";
 import { ClipLoader } from "react-spinners";
 import { usePathname } from "next/navigation";
 import AdminSidebar from "./admin/admin-components/admin-sidebar";
+import AuthComponent from "./login/admin/page";
 
 export default function SessionWrapper({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -40,9 +41,21 @@ export default function SessionWrapper({ children }: { children: React.ReactNode
         <ClipLoader color="#E19517" size={50} />
       </div>
     );
+  } else {
+    setTimeout(() => {
+      if (!navigator.onLine) {
+        alert("No internet connection.");
+        window.location.reload();
+      }
+    }, 6000);
   }
 
   const isAdminPath = pathname.startsWith("/admin");
+  const isLoginPath = pathname.startsWith("/login");
+
+  if (isLoginPath) {
+    return <AuthComponent />;
+  }
 
   return (
     <>

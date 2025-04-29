@@ -97,7 +97,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSwitchToSignUp }) =>
                 id="email"
                 name="email"
                 required
-                className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#E19517]"
+                className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#E19517] border-gray-400"
               />
             </div>
             <div className="mb-10">
@@ -114,7 +114,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSwitchToSignUp }) =>
                 id="password"
                 name="password"
                 required
-                className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#E19517]"
+                className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#E19517] border-gray-400"
               />
               <div className="flex items-center mt-3">
                 <input
