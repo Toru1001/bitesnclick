@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { ShoppingCart } from "lucide-react";
 import { supabase } from "@/app/lib/supabase";
+import ClipLoader from "react-spinners/ClipLoader";
 
 type ProductCardProps = {
   productId: number;
@@ -41,8 +42,8 @@ const ProductCard: React.FC<ProductCardProps> = ({
     return <>
     <div className={`${className} w-75 bg-[#7B5137] rounded-2xl p-4 shadow-lg text-white transform transition duration-300 hover:scale-105`}>
       <div className="rounded-2xl overflow-hidden">
-          <div className="w-full h-25 md:h-50 bg-gray-300 flex items-center justify-center rounded-2xl">
-            <span className="text-gray-500">Loading...</span>
+          <div className="w-full h-25 md:h-50 bg-yellow-950 flex items-center justify-center rounded-2xl">
+          <ClipLoader color="#E19517" size={50} />
           </div>
       </div>
       <div className="mt-3 px-2">
@@ -52,7 +53,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           </h3>
           <div>
             <span className="text-sm md:text-lg rounded-md border-1 px-1 py-0.5 font-medium whitespace-nowrap">
-              ₱ 
+              ₱ 0.00
             </span>
           </div>
         </div>
@@ -60,7 +61,7 @@ const ProductCard: React.FC<ProductCardProps> = ({
           
         </p>
         <div className="flex justify-between items-end mt-3">
-          <span className="bg-[#D4A373] text-[#7B5137] px-3 py-1 rounded-lg text-xs md:text-sm font-semibold">
+          <span className="bg-[#D4A373] text-[#7B5137] px-3 py-1 rounded-lg text-xs h-5 w-15 md:text-sm font-semibold">
             
           </span>
           <button className="group bg-transparent p-2 rounded-full border border-gray-200 cursor-pointer hover:bg-amber-50 transition duration-300">

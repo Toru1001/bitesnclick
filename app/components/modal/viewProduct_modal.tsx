@@ -5,16 +5,18 @@ import { Plus, Minus } from 'lucide-react';
 import { faCartPlus } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { supabase } from '@/app/lib/supabase';
+import { toast, ToastContainer } from 'react-toastify';
 
 interface ViewProductModalProps {
   onClose: () => void;
   productId: number;
+  onMessage?: (message: string) => void;
 }
 
-const ViewProductModal: React.FC<ViewProductModalProps> = ({ onClose, productId }) => {
+const ViewProductModal: React.FC<ViewProductModalProps> = ({ onClose, productId, onMessage }) => {
   const [quantity, setQuantity] = useState<number>(1);
   const [product, setProduct] = useState<any>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(true)
 
   useEffect(() => {
     const fetchProductDetails = async () => {
@@ -39,6 +41,62 @@ const ViewProductModal: React.FC<ViewProductModalProps> = ({ onClose, productId 
   const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
       onClose();
+    }
+  };
+
+  const handleAddToCart = async () => {
+    try {
+      const {
+              data: { user },
+            } = await supabase.auth.getUser();
+      // Fetch the user's cart
+      const { data: cartData, error: cartError } = await supabase
+        .from('cart')
+        .select('cartid')
+        .eq('customerid', user?.id)
+        .single();
+
+      if (cartError && cartError.code !== 'PGRST116') {
+        console.error('Error fetching cart:', cartError);
+        return;
+      }
+
+      let cartId = cartData?.cartid;
+
+      // If no cart exists, create a new one
+      if (!cartId) {
+        const { data: newCart, error: newCartError } = await supabase
+          .from('cart')
+          .insert({ customerid: user?.id })
+          .select('cartid')
+          .single();
+
+        if (newCartError) {
+          console.error('Error creating cart:', newCartError);
+          return;
+        }
+
+        cartId = newCart.cartid;
+      }
+
+      // Insert product into cart_items
+      const totalPrice = quantity * product.price;
+      const { error: cartItemError } = await supabase.from('cart_items').insert({
+        cartid: cartId,
+        productid: product.productid,
+        quantity,
+        total_price: totalPrice,
+      });
+
+      if (cartItemError) {
+        console.error('Error adding item to cart:', cartItemError);
+      } else {
+        console.log('Item added to cart successfully');
+
+        onClose();
+      }
+    } catch (error) {
+      console.error('Unexpected error:', error);
     }
   };
 
@@ -110,7 +168,7 @@ const ViewProductModal: React.FC<ViewProductModalProps> = ({ onClose, productId 
                   </div>
                 </div>
                 <div className="flex justify-center my-5">
-                  <button className="flex gap-x-2 items-center text-xl text-amber-50 bg-[#E19517] rounded-lg px-5 py-2">
+                  <button className="flex gap-x-2 items-center text-xl text-amber-50 bg-[#E19517] rounded-lg px-5 py-2 cursor-pointer" onClick={() =>{handleAddToCart(); onMessage?.("Item added to cart")}}>
                     <span>Add to cart</span>
                     <FontAwesomeIcon icon={faCartPlus} />
                   </button>
@@ -119,7 +177,7 @@ const ViewProductModal: React.FC<ViewProductModalProps> = ({ onClose, productId 
             </div>
           </div>
         )}
-      </div>
+      </div>  
     </div>
   );
 };
