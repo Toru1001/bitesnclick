@@ -111,7 +111,7 @@ export default function Home() {
               if (showtotalPrice > 0) {
               router.push("/cart/checkout");
               } else {
-              alert("There are no items inside the cart.");
+              alert("Your cart is empty, please add items before checkout.");
               }
             }}
             >

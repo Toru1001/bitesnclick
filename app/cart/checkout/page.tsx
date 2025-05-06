@@ -10,6 +10,7 @@ import InputVoucherModal from "@/app/components/modal/orders_modify/inputVoucher
 import { useRouter } from "next/dist/client/components/navigation";
 import PaymentModal from "@/app/components/modal/orders_modify/payment_modal";
 import SuccessModal from "@/app/components/modal/success_modal";
+import { toast, ToastContainer } from "react-toastify";
 
 export default function Home() {
   const router = useRouter();
@@ -35,6 +36,7 @@ export default function Home() {
     city: string;
     zipcode: string;
   } | null>(null);
+  const notify = (message: string) => toast.success(message);
 
   const calculateFinalPrice = (totalPrice: number, discount: number) => {
     if (totalPrice === 0) {
@@ -211,6 +213,7 @@ export default function Home() {
 
   const handlePaymentMethodChange = (method: string) => {
     console.log("Selected payment method:", method);
+    notify("Payment method saved successfully.")
     setPaymentMethod(method);
   };
 
@@ -243,7 +246,7 @@ export default function Home() {
       }
 
       if (!paymentMethod) {
-        alert("Please select a payment method before placing the order.");
+        alert("Please select a payment method.");
         return;
       }
 
@@ -357,7 +360,7 @@ export default function Home() {
 
       setTimeout(() => {
         setSuccessModal(false);
-        router.push("/");
+        router.push("/orders");
       }, 4000);
     } catch (error) {
       console.error("Unexpected error placing order:", error);
@@ -548,6 +551,7 @@ export default function Home() {
       {successModal && (
         <SuccessModal onClose={() => setSuccessModal(false)}/>
       )}
+      <ToastContainer theme="light" position="bottom-right" />
     </>
   );
 }

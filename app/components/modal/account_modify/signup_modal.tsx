@@ -20,6 +20,7 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [invalidFields, setInvalidFields] = useState<string[]>([]);
 
   const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
@@ -30,75 +31,114 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
   const handleSignUp = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = event.target as HTMLFormElement;
-    const firstName = form.firstName.value;
-    const lastName = form.lastName.value;
-    const display_name = `${firstName} ${lastName}`;
-    const email = form.email.value;
-    const mobileNumber = form.mobileNumber.value;
-    const streetAddress = form.streetAddress.value;
-    const city = form.city.value;
-    const barangay = form.barangay.value;
-    const zipCode = form.zipCode.value;
-    const password = form.password.value;
-    const confirmPassword = form.confirmPassword.value;
-
+  
+    const fields = [
+      "firstName",
+      "lastName",
+      "email",
+      "mobileNumber",
+      "streetAddress",
+      "city",
+      "barangay",
+      "zipCode",
+      "password",
+      "confirmPassword",
+    ];
+  
+    const emptyFields = fields.filter((field) => {
+      const value = form[field]?.value.trim();
+      return !value;
+    });
+  
+    setInvalidFields(emptyFields);
     setError(null);
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+  
+    if (emptyFields.length > 0) {
+     setError("Please fill in empty fields.");
       return;
     }
-
+  
+    const firstName = form.firstName.value.trim();
+    const lastName = form.lastName.value.trim();
+    const display_name = `${firstName} ${lastName}`;
+    const email = form.email.value.trim();
+    const mobileNumber = form.mobileNumber.value.trim();
+    const streetAddress = form.streetAddress.value.trim();
+    const city = form.city.value.trim();
+    const barangay = form.barangay.value.trim();
+    const zipCode = form.zipCode.value.trim();
+    const password = form.password.value;
+    const confirmPassword = form.confirmPassword.value;
+  
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      setInvalidFields(["password", "confirmPassword"]);
+      return;
+    }
+  
+    const mobileRegex = /^(?:\+639|639|09|9)\d{9}$/;
+    if (!mobileRegex.test(mobileNumber)) {
+      setError("Invalid mobile number.");
+      setInvalidFields(["mobileNumber"]);
+      return;
+    }
+  
     const { data: existingUser, error: emailCheckError } = await supabase
       .from("customers")
       .select("email")
       .eq("email", email)
       .single();
-
+  
     if (emailCheckError && emailCheckError.code !== "PGRST116") {
       setError(emailCheckError.message);
       return;
     }
-
+  
     if (existingUser) {
       setError("Email is already in use.");
+      setInvalidFields(["email"]);
       return;
     }
-
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp(
-      {
-        email,
-        password,
-        options: {
-          data: { display_name },
-        },
-      }
-    );
-
+  
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: { display_name },
+      },
+    });
+  
     if (signUpError) {
       setError(signUpError.message);
       return;
     }
+  
     const userId = signUpData.user?.id;
-
+  
     const { error: insertError } = await supabase.from("customers").insert([
-        {
-          customerid: userId,
-          first_name: firstName,
-          last_name: lastName,
-          email,
-          mobile_num: mobileNumber,
-          street_address: streetAddress,
-          city,
-          barangay,
-          zipcode: zipCode,
-        },
-      ]);
-
+      {
+        customerid: userId,
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        mobile_num: mobileNumber,
+        street_address: streetAddress,
+        city,
+        barangay,
+        zipcode: zipCode,
+      },
+    ]);
+  
+    if (insertError) {
+      setError(insertError.message);
+      return;
+    }
+  
     setVerificationModalOpen(true);
     setEmail(email);
     setPassword(password);
   };
+  
 
   return (
     <div
@@ -135,9 +175,12 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
                   type="text"
                   id="first-name"
                   name="firstName"
-                  required
-                  className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#E19517]"
-                />
+                  
+                  className={`w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 ${
+                    invalidFields.includes("firstName")
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-400 focus:ring-[#E19517]"
+                  }`}              />
               </div>
               <div className="w-full">
                 <label
@@ -150,9 +193,12 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
                   type="text"
                   id="last-name"
                   name="lastName"
-                  required
-                  className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#E19517]"
-                />
+                  
+                  className={`w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 ${
+                    invalidFields.includes("lastName")
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-400 focus:ring-[#E19517]"
+                  }`}               />
               </div>
               <div className="w-full">
                 <label
@@ -165,9 +211,12 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
                   type="email"
                   id="email"
                   name="email"
-                  required
-                  className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#E19517]"
-                />
+                  
+                  className={`w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 ${
+                    invalidFields.includes("email")
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-400 focus:ring-[#E19517]"
+                  }`}               />
               </div>
               <div className="w-full">
                 <label
@@ -180,9 +229,12 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
                   type="tel"
                   id="mobile-number"
                   name="mobileNumber"
-                  required
-                  className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#E19517]"
-                />
+                  
+                  className={`w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 ${
+                    invalidFields.includes("mobileNumber")
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-400 focus:ring-[#E19517]"
+                  }`}             />
               </div>
               <div className="w-full">
                 <label
@@ -195,9 +247,12 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
                   type="text"
                   id="street-address"
                   name="streetAddress"
-                  required
-                  className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#E19517]"
-                />
+                  
+                  className={`w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 ${
+                    invalidFields.includes("streetAddress")
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-400 focus:ring-[#E19517]"
+                  }`}              />
               </div>
               <div className="w-full">
                 <label
@@ -210,9 +265,12 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
                   type="text"
                   id="city"
                   name="city"
-                  required
-                  className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#E19517]"
-                />
+                  
+                  className={`w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 ${
+                    invalidFields.includes("city")
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-400 focus:ring-[#E19517]"
+                  }`}               />
               </div>
               <div className="w-full">
                 <label
@@ -225,9 +283,12 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
                   type="text"
                   id="barangay"
                   name="barangay"
-                  required
-                  className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#E19517]"
-                />
+                  
+                  className={`w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 ${
+                    invalidFields.includes("barangay")
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-400 focus:ring-[#E19517]"
+                  }`}                />
               </div>
               <div className="w-full">
                 <label
@@ -240,9 +301,12 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
                   type="text"
                   id="zip-code"
                   name="zipCode"
-                  required
-                  className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#E19517]"
-                />
+                  
+                  className={`w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 ${
+                    invalidFields.includes("zipCode")
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-400 focus:ring-[#E19517]"
+                  }`}              />
               </div>
               <div className="w-full relative">
                 <label
@@ -255,9 +319,12 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
                   type={showPassword ? "text" : "password"}
                   id="password"
                   name="password"
-                  required
-                  className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#E19517]"
-                />
+                  
+                  className={`w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 ${
+                    invalidFields.includes("password")
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-400 focus:ring-[#E19517]"
+                  }`}               />
                 <span
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-9 cursor-pointer text-[#E19517]"
@@ -281,9 +348,12 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
                   type={showRePassword ? "text" : "password"}
                   id="confirm-password"
                   name="confirmPassword"
-                  required
-                  className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#E19517]"
-                />
+                  
+                  className={`w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 ${
+                    invalidFields.includes("confirmPassword")
+                      ? "border-red-500 focus:ring-red-500"
+                      : "border-gray-400 focus:ring-[#E19517]"
+                  }`}               />
                 <span
                   onClick={() => setReShowPassword(!showRePassword)}
                   className="absolute right-3 top-9 cursor-pointer text-[#E19517]"

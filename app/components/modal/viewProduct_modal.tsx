@@ -5,7 +5,6 @@ import { Plus, Minus } from 'lucide-react';
 import { faCartPlus } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { supabase } from '@/app/lib/supabase';
-import { toast, ToastContainer } from 'react-toastify';
 
 interface ViewProductModalProps {
   onClose: () => void;
@@ -92,7 +91,6 @@ const ViewProductModal: React.FC<ViewProductModalProps> = ({ onClose, productId,
         console.error('Error adding item to cart:', cartItemError);
       } else {
         console.log('Item added to cart successfully');
-
         onClose();
       }
     } catch (error) {

@@ -2,9 +2,21 @@ import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import ProductCard from "../../model/product-card";
 import { supabase } from "@/app/lib/supabase";
+import { useRouter } from "next/navigation";
+import ViewProductModal from "../../modal/viewProduct_modal";
+import { toast, ToastContainer } from "react-toastify";
 
 const ProductSection: React.FC = () => {
+  const router = useRouter();
   const [products, setProducts] = useState<any[]>([]);
+  const [showViewProductModal, setViewProductModal] = useState(false);
+  const [viewProduct, setViewproduct] = useState<number>(0);
+  const notify = (message: string) => toast.success(message);
+  
+    const handleOnMessage = (message: string) => {
+      console.log(message);
+      notify(message);
+    };
 
   useEffect(() => {
       const fetchProducts = async () => {
@@ -55,7 +67,7 @@ const ProductSection: React.FC = () => {
           </div>
         </div>
         <div>
-          <button className="border-2 border-[#E19517] rounded-lg py-2 px-4 cursor-pointer text-[#E19517] font-medium z-10">
+          <button className="border-2 border-[#E19517] rounded-lg py-2 px-4 cursor-pointer text-[#E19517] font-medium z-10" onClick={() => {router.push("/products")}}>
             See All
           </button>
         </div>
@@ -69,11 +81,22 @@ const ProductSection: React.FC = () => {
                         productId={product.productid}
                         className="w-full max-w-xs"
                         category={product.category.name}
-                        onClicked={() => setProducts([1,2])}
+                        onClicked={() => {setViewProductModal(true); setViewproduct(product.productid);}}
                       />
                     ))}
         </div>
       </div>
+      {showViewProductModal && (
+                <ViewProductModal 
+                  onClose={() => setViewProductModal(false)} 
+                  productId={viewProduct} 
+                  onMessage={(message) => {
+                    handleOnMessage(message);
+                    setViewProductModal(false);
+                  }}
+                />
+              )}
+              <ToastContainer theme="light" position="bottom-right" />
     </div>
   );
 };

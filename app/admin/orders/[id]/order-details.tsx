@@ -250,7 +250,7 @@ const OrderDetails: React.FC = () => {
                   <div className="flex justify-between">
                     <span className="text-2xl">Total:</span>
                     <span className="text-2xl text-[#E19517] font-semibold">
-                      ₱ {(subtotal + 40).toFixed(1)}
+                      ₱ {(orderDetails[0].order_price).toFixed(1)}
                     </span>
                   </div>
                 </div>
