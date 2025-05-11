@@ -20,7 +20,7 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const [showDeleteConfirmationModal, setShowDeleteConfirmationModal] = useState(false);
-  const [loading, setLoading] = useState(false); // Loading state for both fetching and deleting
+  const [loading, setLoading] = useState(false);
 
   const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
@@ -58,25 +58,83 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
   const handleEditAccount = async () => {
     if (!formRef.current) return;
     const form = formRef.current;
-    const firstName = form.firstName.value;
-    const lastName = form.lastName.value;
-    const displayName = `${firstName} ${lastName}`;
-    const mobileNumber = form.mobileNumber.value;
-    const streetAddress = form.streetAddress.value;
-    const city = form.city.value;
-    const barangay = form.barangay.value;
-    const zipCode = form.zipCode.value;
+
+    const firstName = form.firstName.value.trim();
+    const lastName = form.lastName.value.trim();
+    const mobileNumber = form.mobileNumber.value.trim();
+    const streetAddress = form.streetAddress.value.trim();
+    const city = form.city.value.trim();
+    const barangay = form.barangay.value.trim();
 
     const oldPassword = form.oldPassword?.value;
     const newPassword = form.newPassword?.value;
     const confirmPassword = form.rePassword?.value;
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    Array.from(form.elements).forEach((el) => {
+      if (el instanceof HTMLInputElement) {
+        el.classList.remove('border-red-500');
+      }
+    });
 
+    // Validation
+    const requiredFields = [
+      { name: 'firstName', value: firstName },
+      { name: 'lastName', value: lastName },
+      { name: 'mobileNumber', value: mobileNumber },
+      { name: 'streetAddress', value: streetAddress },
+      { name: 'city', value: city },
+      { name: 'barangay', value: barangay },
+    ];
+
+    let hasError = false;
+    requiredFields.forEach(({ name, value }) => {
+      const input = form[name];
+      if (!value) {
+        input.classList.add('border-red-500');
+        hasError = true;
+      }
+    });
+
+    if (hasError) {
+      setError('Please fill in all required fields.');
+      alert('Please fill in all required fields.');
+      return;
+    }
+
+    if (showEditPassword) {
+      if (!oldPassword || !newPassword || !confirmPassword) {
+        if (!oldPassword) form.oldPassword.classList.add('border-red-500');
+        if (!newPassword) form.newPassword.classList.add('border-red-500');
+        if (!confirmPassword) form.rePassword.classList.add('border-red-500');
+
+        setError('Please fill in all password fields.');
+        alert('Please fill in all password fields.');
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        form.newPassword.classList.add('border-red-500');
+        form.rePassword.classList.add('border-red-500');
+        setError('New password and confirmation do not match.');
+        alert('New password and confirmation do not match.');
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        form.newPassword.classList.add('border-red-500');
+        setError('Password must be at least 6 characters.');
+        alert('Password must be at least 6 characters.');
+        return;
+      }
+    }
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (!user) {
       setError('User not found.');
       return;
     }
+
+    const displayName = `${firstName} ${lastName}`;
 
     try {
       const { error: updateError } = await supabase
@@ -88,7 +146,6 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
           street_address: streetAddress,
           city,
           barangay,
-          zipcode: zipCode,
         })
         .eq('customerid', user.id);
 
@@ -101,18 +158,6 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
       if (authError) throw new Error(authError.message);
 
       if (showEditPassword) {
-        if (!oldPassword || !newPassword || !confirmPassword) {
-          throw new Error('Please fill in all password fields.');
-        }
-
-        if (newPassword !== confirmPassword) {
-          throw new Error('New password and confirmation do not match.');
-        }
-
-        if (newPassword.length < 6) {
-          throw new Error('Password must be at least 6 characters.');
-        }
-
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: customerDetails.email,
           password: oldPassword,
@@ -133,38 +178,42 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
     } catch (err: any) {
       console.error('Error updating account:', err.message);
       setError(err.message);
+      alert(err.message);
     }
   };
 
   const handleDeleteAccount = async () => {
+    setShowDeleteConfirmationModal(false);
     setLoading(true);
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
-
+  
       if (!user) {
         setError('User not found.');
         setLoading(false);
         return;
       }
-
+  
       const response = await fetch('/lib/delete-account', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
         },
+        body: JSON.stringify({ userId: user.id }),
       });
-
+  
       const responseData = await response.json();
-
+      console.log('Response:', responseData);
+  
       if (!response.ok) {
         setError(responseData.error || 'Failed to delete account');
         setLoading(false);
         return;
       }
-
+  
       if (responseData.success) {
-        onClose();
+        alert("Account deleted successfully.");
         localStorage.clear();
         router.replace('/');
         window.location.reload();
@@ -172,11 +221,13 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
         setError('An error occurred while deleting the account.');
         setLoading(false);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error deleting account:', err);
+      setError(err.message || 'Unexpected error occurred.');
       setLoading(false);
     }
   };
+  
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-30" onClick={handleOverlayClick}>
@@ -200,7 +251,6 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
         {!loading && (
           <div className="mx-5">
             <form ref={formRef} className="space-y-2 mt-5 w-full" onSubmit={(e) => { e.preventDefault(); setShowConfirmationModal(true); }}>
-              {error && <p className="text-red-500 ">{error}</p>}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 gap-x-10 w-full">
                 <div className="w-full">
                   <label htmlFor="first-name" className="block text-sm font-medium text-[#240C03]">

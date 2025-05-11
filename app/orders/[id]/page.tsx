@@ -53,7 +53,6 @@ const OrderDetails: React.FC = () => {
           : null;
 
         setOrders(orders);
-        console.log(orders);
 
         if (error) throw error;
       } catch (error) {
@@ -242,7 +241,7 @@ const OrderDetails: React.FC = () => {
                     <div className="flex justify-between">
                       <span className="text-2xl">Total:</span>
                       <span className="text-2xl text-[#E19517] font-semibold">
-                        ₱ {orders?.order_price}.00
+                        ₱ {orders?.order_price.toFixed(2)}
                       </span>
                     </div>
                   </div>

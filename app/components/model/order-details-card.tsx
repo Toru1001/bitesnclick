@@ -16,7 +16,7 @@ const OrderDetailsCard: React.FC<OrderDetailsCardProps> = ({ orderId, onTotalPri
             try {
                 const { data, error } = await supabase
                     .from("orderdetails")
-                    .select("*, products(name, img, price, category(name))")
+                    .select("*, products(name, img, category(name))")
                     .eq("orderid", orderId);
 
                 if (error) throw error;
@@ -36,7 +36,7 @@ const OrderDetailsCard: React.FC<OrderDetailsCardProps> = ({ orderId, onTotalPri
 
     return (
         orderItems && (
-            <div className="flex flex-col justify-center border-b-1 border-gray-300 items-center px-10 py-3">
+            <div className="flex flex-col gap-y-3 justify-center border-b-1 border-gray-300 items-center px-10 py-3">
                 {/* Product Details */}
                 {orderItems.map((item: any) => (
                     <div key={item.id} className="flex items-center w-full">
@@ -58,7 +58,7 @@ const OrderDetailsCard: React.FC<OrderDetailsCardProps> = ({ orderId, onTotalPri
                             </div>
                         </div>
                         <div className="flex justify-between w-full">
-                            <span className="text-lg font-medium text-gray-950">₱{item.products.price}</span>
+                            <span className="text-lg font-medium text-gray-950">₱{(item.prod_price).toFixed(2)}</span>
                             <span className="text-lg font-medium text-gray-950">x{item.quantity}</span>
                             <span className="text-lg font-medium text-gray-950">₱{item.price.toFixed(2)}</span>
                         </div>

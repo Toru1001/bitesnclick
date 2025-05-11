@@ -99,16 +99,16 @@ const OrderDetails: React.FC = () => {
               <SelectTrigger
                 className={`w-35 border-2 ${
                   orderDetails[0].order_status === "Pending"
-                    ? "bg-yellow-50 text-black border-gray-300"
-                    : orderDetails[0].order_status === "Processing"
-                    ? "bg-yellow-100 text-yellow-800 border-yellow-950/50"
-                    : orderDetails[0].order_status === "Brewing"
-                    ? "bg-yellow-900/30 text-yellow-900 border-yellow-800"
-                    : orderDetails[0].order_status === "Shipped"
-                    ? "bg-green-200 text-green-800 border-green-900"
-                    : orderDetails[0].order_status === "Order Complete"
-                    ? "bg-green-400 text-green-950 border-green-700/70"
-                    : "bg-red-100 text-red-800"
+                    ? "bg-yellow-50 text-black"
+                        : orderDetails[0].order_status === "Processing"
+                        ? "bg-yellow-200 text-yellow-800"
+                        : orderDetails[0].order_status === "Brewing"
+                        ? "bg-yellow-900/30 text-yellow-900"
+                        : orderDetails[0].order_status === "Shipped"
+                        ? "bg-orange-200 text-orange-800"
+                        : orderDetails[0].order_status === "Order Complete"
+                        ? "bg-[#E19517] text-amber-50"
+                        : "text-amber-50 bg-red-600"
                 }`}
               >
                 <SelectValue placeholder={orderDetails[0].order_status} />

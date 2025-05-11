@@ -25,7 +25,7 @@ const ConfirmationModal: React.FC<ConfirmationModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-40">
+    <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-50">
       <div className="bg-white rounded-lg p-5 max-w-md w-full">
         <div className="px-5 border-b border-[#E19517] py-2 mb-4">
           <span className='text-xl font-semibold'>{title}</span>

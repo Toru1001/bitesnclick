@@ -203,6 +203,7 @@ export default function Home() {
         setVoucherDiscount(data.percent);
         setVoucherCode(voucher);
         calculateFinalPrice(showtotalPrice, data.percent);
+        notify("Voucher applied successfully.");
       } else {
         console.log("No voucher found with the given code.");
       }
@@ -213,7 +214,7 @@ export default function Home() {
 
   const handlePaymentMethodChange = (method: string) => {
     console.log("Selected payment method:", method);
-    notify("Payment method saved successfully.")
+    notify("Payment method saved successfully.");
     setPaymentMethod(method);
   };
 
@@ -225,147 +226,160 @@ export default function Home() {
     }
   };
 
-  const handleImageUpload = (imageUrl: string) => {
-    setConfirmedPayment(true);
-    setPaymentImage(imageUrl);
-    console.log(imageUrl);
-    if (paymentMethod === "GCASH") {
-      placeOrder();
+  const placeOrder = async (imageUrl?: string) => {
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      console.warn("User not authenticated");
+      return;
     }
-  };
 
-  const placeOrder = async ( imageUrl? : string) => {
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    if (!paymentMethod) {
+      alert("Please select a payment method.");
+      return;
+    }
 
-      if (!user) {
-        console.warn("User not authenticated");
-        return;
-      }
+    let voucherId = null;
 
-      if (!paymentMethod) {
-        alert("Please select a payment method.");
-        return;
-      }
-
-      let voucherId = null;
-
-      if (voucherCode) {
-        const { data: voucherData, error: voucherError } = await supabase
-          .from("vouchers")
-          .select("voucherid")
-          .eq("code", voucherCode)
-          .single();
-
-        if (voucherError) {
-          console.error("Error fetching voucher ID:", voucherError);
-        } else {
-          voucherId = voucherData?.voucherid || null;
-        }
-      }
-
-      const messageElement =
-        document.querySelector<HTMLTextAreaElement>("textarea");
-      const message = messageElement?.value || "";
-
-      const orderData = {
-        order_status: "Pending",
-        order_date: new Date().toISOString(),
-        order_price:
-          finalPrice === 0
-            ? (showtotalPrice + 40).toFixed(2)
-            : finalPrice.toFixed(2),
-        message: message,
-        delivery_address: `${address?.street}, ${address?.barangay}, ${address?.city}, Davao Del Sur, ${address?.zipcode}`,
-        customerid: user.id,
-        voucherid: voucherId,
-        paymentMethod: paymentMethod,
-        payment_img: imageUrl ?? null,
-      };
-      console.log(imageUrl);
-      const { data: orderInsertData, error: orderError } = await supabase
-        .from("orders")
-        .insert(orderData)
-        .select("orderid")
+    if (voucherCode) {
+      const { data: voucherData, error: voucherError } = await supabase
+        .from("vouchers")
+        .select("voucherid")
+        .eq("code", voucherCode)
         .single();
 
-      if (orderError) {
-        console.error("Error placing order:", orderError);
+      if (voucherError) {
+        console.error("Error fetching voucher ID:", voucherError);
+      } else {
+        voucherId = voucherData?.voucherid || null;
+      }
+    }
+
+    const messageElement =
+      document.querySelector<HTMLTextAreaElement>("textarea");
+    const message = messageElement?.value || "";
+
+    const orderData = {
+      order_status: "Pending",
+      order_date: new Date().toISOString(),
+      order_price:
+        finalPrice === 0
+          ? (showtotalPrice + 40).toFixed(2)
+          : finalPrice.toFixed(2),
+      message: message,
+      delivery_address: `${address?.street}, ${address?.barangay}, ${address?.city}, Davao Del Sur, ${address?.zipcode}`,
+      customerid: user.id,
+      voucherid: voucherId,
+      paymentMethod: paymentMethod,
+      payment_img: imageUrl ?? null,
+    };
+
+    const { data: orderInsertData, error: orderError } = await supabase
+      .from("orders")
+      .insert(orderData)
+      .select("orderid")
+      .single();
+
+    if (orderError) {
+      console.error("Error placing order:", orderError);
+      return;
+    }
+
+    const orderId = orderInsertData?.orderid;
+
+    if (!orderId) {
+      console.error("Order ID not returned after order insertion.");
+      return;
+    }
+
+    if (voucherId) {
+      const { error: updateVoucherError } = await supabase
+        .from("vouchers")
+        .update({ status: "used" })
+        .eq("voucherid", voucherId);
+
+      if (updateVoucherError) {
+        console.error("Error updating voucher status:", updateVoucherError);
         return;
       }
+    }
 
-      const orderId = orderInsertData?.orderid;
+    const { data: cartItems, error: cartItemsError } = await supabase
+      .from("cart_items")
+      .select("*, product:productid(price)")
+      .eq("cartid", cartId);
 
-      if (!orderId) {
-        console.error("Order ID not returned after order insertion.");
-        return;
-      }
+    if (cartItemsError) {
+      console.error("Error fetching cart items:", cartItemsError);
+      return;
+    }
 
-      if (voucherId) {
-        const { error: updateVoucherError } = await supabase
-          .from("vouchers")
-          .update({ status: "used" })
-          .eq("voucherid", voucherId);
+    if (cartItems && cartItems.length > 0) {
+      const orderDetailsData = [];
 
-        if (updateVoucherError) {
-          console.error("Error updating voucher status:", updateVoucherError);
-          return;
+      for (const item of cartItems) {
+        const { data: discountData, error: discountError } = await supabase
+          .from("discount")
+          .select("newprice")
+          .eq("productid", item.productid)
+          .lte("start_date", new Date().toISOString())
+          .gte("end_date", new Date().toISOString())
+          .single();
+
+        let finalProdPrice;
+
+        if (discountData && !discountError) {
+          finalProdPrice = discountData.newprice;
+        } else {
+          finalProdPrice = item.product?.price;
         }
-      }
 
-      const { data: cartItems, error: cartItemsError } = await supabase
-        .from("cart_items")
-        .select("productid, total_price, quantity")
-        .eq("cartid", cartId);
-
-      if (cartItemsError) {
-        console.error("Error fetching cart items:", cartItemsError);
-        return;
-      }
-
-      if (cartItems && cartItems.length > 0) {
-        const orderDetailsData = cartItems.map((item) => ({
+        orderDetailsData.push({
           orderid: orderId,
           productid: item.productid,
           price: item.total_price,
           quantity: item.quantity,
-        }));
-
-        const { error: orderDetailsError } = await supabase
-          .from("orderdetails")
-          .insert(orderDetailsData);
-
-        if (orderDetailsError) {
-          console.error("Error inserting order details:", orderDetailsError);
-          return;
-        }
-
-        const { error: deleteCartItemsError } = await supabase
-          .from("cart_items")
-          .delete()
-          .eq("cartid", cartId);
-
-        if (deleteCartItemsError) {
-          console.error("Error deleting cart items:", deleteCartItemsError);
-          return;
-        }
+          prod_price: finalProdPrice,
+        });
       }
-      
-      setSuccessModal(true);
-      console.log(
-        "Order placed, order details inserted, and cart cleared successfully!"
-      );
 
-      setTimeout(() => {
-        setSuccessModal(false);
-        router.push("/orders");
-      }, 4000);
-    } catch (error) {
-      console.error("Unexpected error placing order:", error);
+      const { error: orderDetailsError } = await supabase
+        .from("orderdetails")
+        .insert(orderDetailsData);
+
+      if (orderDetailsError) {
+        console.error("Error inserting order details:", orderDetailsError);
+        return;
+      }
+
+      const { error: deleteCartItemsError } = await supabase
+        .from("cart_items")
+        .delete()
+        .eq("cartid", cartId);
+
+      if (deleteCartItemsError) {
+        console.error("Error deleting cart items:", deleteCartItemsError);
+        return;
+      }
     }
-  };
+
+    setSuccessModal(true);
+    console.log(
+      "Order placed, order details inserted, and cart cleared successfully!"
+    );
+
+    setTimeout(() => {
+      setSuccessModal(false);
+      router.push("/orders");
+    }, 4000);
+  } catch (error) {
+    console.error("Unexpected error placing order:", error);
+  }
+};
+
 
   return (
     <>
@@ -548,9 +562,7 @@ export default function Home() {
           onImageUpload={placeOrder}
         />
       )}
-      {successModal && (
-        <SuccessModal onClose={() => setSuccessModal(false)}/>
-      )}
+      {successModal && <SuccessModal onClose={() => setSuccessModal(false)} />}
       <ToastContainer theme="light" position="bottom-right" />
     </>
   );

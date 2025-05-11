@@ -107,6 +107,7 @@ const NewProduct = () => {
         categoryId: false,
         productImage: false,
       });
+      useRouter().push('/admin/products');
     }
 
     setLoading(false);
