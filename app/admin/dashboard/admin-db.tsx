@@ -1,6 +1,8 @@
-"use client"
+'use client';
 
-import React from "react"
+import { supabase } from '@/app/lib/supabase';
+import { useEffect, useState } from 'react';
+
 import {
   BarChart,
   Bar,
@@ -8,43 +10,118 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
+  LineChart, 
   Line,
-} from "recharts"
+  CartesianGrid,
+} from 'recharts';
 
-// Dummy data
-const discountedProducts = [
-  { id: 1, name: "Espresso", price: 150, discounted: 120 },
-  { id: 2, name: "Latte", price: 180, discounted: 150 },
-]
+interface Product {
+  id: number;
+  name: string;
+  price: number;
+  is_archived: boolean;
+}
 
-const archivedProducts = [
-  { id: 3, name: "Mocha", price: 170 },
-]
+interface Discount {
+  newprice: any;
+  products: any;
+  discountid: number;
+  product_id: number;
+  discount_percent: number;
+  new_price: number;
+  start_date: string;
+  end_date: string;
+  product: Product;
+}
 
-const totalProducts = 15
-const incomingOrders = 8
+interface Order {
+  id: number;
+  status: string;
+  created_at: string;
+  total_amount: number;
+}
 
-const weeklySalesData = [
-  { day: "Mon", sales: 200 },
-  { day: "Tue", sales: 400 },
-  { day: "Wed", sales: 300 },
-  { day: "Thu", sales: 500 },
-  { day: "Fri", sales: 700 },
-  { day: "Sat", sales: 1000 },
-  { day: "Sun", sales: 800 },
-]
-
-const monthlySalesData = [
-  { month: "Jan", sales: 5000 },
-  { month: "Feb", sales: 4500 },
-  { month: "Mar", sales: 6000 },
-  { month: "Apr", sales: 7000 },
-  { month: "May", sales: 7500 },
-  { month: "Jun", sales: 8000 },
-]
 
 export default function AdminDashboard() {
+  const [discountedProducts, setDiscountedProducts] = useState<Discount[]>([]);
+  const [archivedProducts, setArchivedProducts] = useState<Product[]>([]);
+  const [totalProducts, setTotalProducts] = useState<number>(0);
+  const [incomingOrders, setIncomingOrders] = useState<number>(0);
+  const [weeklySales, setWeeklySales] = useState<any[]>([]);
+  const [monthlySales, setMonthlySales] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      // Fetch discounted products
+      const { data: discountsData, error: discountsError } = await supabase
+        .from('discount')
+        .select('*, products:products(productid, name, price)');
+
+      if (discountsError) {
+        console.error('Error fetching discounted products:', discountsError.message);
+      } else {
+        setDiscountedProducts(discountsData || []);
+      }
+
+      // Fetch archived products
+      const { data: archivedData, error: archivedError } = await supabase
+        .from('products')
+        .select('*')
+        .eq('isarchive', true);
+
+      if (archivedError) {
+        console.error('Error fetching archived products:', archivedError.message);
+      } else {
+        setArchivedProducts(archivedData || []);
+      }
+
+      // Fetch total products count
+      const { count: totalCount, error: totalError } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true });
+
+      if (totalError) {
+        console.error('Error fetching total products count:', totalError.message);
+      } else {
+        setTotalProducts(totalCount || 0);
+      }
+
+      // Fetch incoming orders count
+      const { data: incomingOrdersData, error: incomingOrdersError } = await supabase
+      .from("orders")
+      .select("*")
+      .in("order_status", ["Pending", "Processing", "Brewing", "Shipped"])
+      .order("order_date", { ascending: false });
+
+    if (incomingOrdersError) {
+      console.error("Error fetching incoming orders:", incomingOrdersError.message);
+    } else {
+      setIncomingOrders(incomingOrdersData?.length || 0);
+    }
+      
+
+      // Fetch weekly sales data
+      const { data: weeklyData, error: weeklyError } = await supabase.rpc('get_weekly_sales');
+
+      if (weeklyError) {
+        console.error('Error fetching weekly sales data:', weeklyError.message);
+      } else {
+        setWeeklySales(weeklyData || []);
+      }
+
+      // Fetch monthly sales data
+      const { data: monthlyData, error: monthlyError } = await supabase.rpc('get_monthly_sales');
+
+      if (monthlyError) {
+        console.error('Error fetching monthly sales data:', monthlyError.message);
+      } else {
+        setMonthlySales(monthlyData || []);
+      }
+    };
+
+    fetchData();
+  }, []);
+
   return (
     <div className="p-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
@@ -52,73 +129,96 @@ export default function AdminDashboard() {
           <h2 className="text-sm text-gray-500">Total Products</h2>
           <p className="text-2xl font-semibold">{totalProducts}</p>
         </div>
-        <div className="bg-white p-4 rounded-xl shadow">
-          <h2 className="text-sm text-gray-500">Incoming Orders</h2>
-          <p className="text-2xl font-semibold">{incomingOrders}</p>
+        <div className="bg-white p-4 rounded shadow">
+          <h2 className="text-lg font-semibold">Incoming Orders</h2>
+          <p className="text-2xl">{incomingOrders}</p>
         </div>
-        <div className="bg-white p-4 rounded-xl shadow">
-          <h2 className="text-sm text-gray-500">Discounted Products</h2>
-          <p className="text-2xl font-semibold">{discountedProducts.length}</p>
+        <div className="bg-white p-4 rounded shadow">
+          <h2 className="text-lg font-semibold">Discounted Products</h2>
+          <p className="text-2xl">{discountedProducts.length}</p>
         </div>
-        <div className="bg-white p-4 rounded-xl shadow">
-          <h2 className="text-sm text-gray-500">Archived Products</h2>
-          <p className="text-2xl font-semibold">{archivedProducts.length}</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white p-4 rounded-xl shadow">
-          <h2 className="text-lg font-semibold mb-2">Weekly Sales</h2>
-          <ResponsiveContainer width="100%" height={250}>
-            <BarChart data={weeklySalesData}>
-              <XAxis dataKey="day" />
-              <YAxis />
-              <Tooltip />
-              <Bar dataKey="sales" fill="#8b5cf6" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-
-        <div className="bg-white p-4 rounded-xl shadow">
-          <h2 className="text-lg font-semibold mb-2">Monthly Sales</h2>
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={monthlySalesData}>
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-              <Line type="monotone" dataKey="sales" stroke="#10b981" strokeWidth={2} />
-            </LineChart>
-          </ResponsiveContainer>
+        <div className="bg-white p-4 rounded shadow">
+          <h2 className="text-lg font-semibold">Archived Products</h2>
+          <p className="text-2xl">{archivedProducts.length}</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white p-4 rounded-xl shadow">
-          <h2 className="text-lg font-semibold mb-4">Discounted Products</h2>
-          <ul className="space-y-2">
-            {discountedProducts.map(product => (
-              <li key={product.id} className="flex justify-between">
-                <span>{product.name}</span>
-                <span className="text-green-600 font-medium">
-                  ₱{product.discounted} <span className="line-through text-gray-400 ml-2">₱{product.price}</span>
-                </span>
-              </li>
+      {/* Discounted Products Table */}
+      <div className="bg-white p-4 rounded shadow mb-6">
+        <h2 className="text-xl font-semibold mb-4">Discounted Products</h2>
+        <table className="w-full table-auto">
+          <thead>
+            <tr>
+              <th className="px-4 py-2 text-left">Product Name</th>
+              <th className="px-4 py-2 text-left">Original Price</th>
+              <th className="px-4 py-2 text-left">Discount %</th>
+              <th className="px-4 py-2 text-left">New Price</th>
+              <th className="px-4 py-2 text-left">Start Date</th>
+              <th className="px-4 py-2 text-left">End Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {discountedProducts.map((discount) => (
+              <tr key={discount.discountid}>
+                <td className="px-4 py-2">{discount.products.name}</td>
+                <td className="px-4 py-2">₱{discount.products.price?.toFixed(2)}</td>
+                <td className="px-4 py-2">{discount.discount_percent}%</td>
+                <td className="px-4 py-2">₱{discount.newprice?.toFixed(2)}</td>
+                <td className="px-4 py-2">{new Date(discount.start_date).toLocaleDateString()}</td>
+                <td className="px-4 py-2">{new Date(discount.end_date).toLocaleDateString()}</td>
+              </tr>
             ))}
-          </ul>
-        </div>
+          </tbody>
+        </table>
+      </div>
 
-        <div className="bg-white p-4 rounded-xl shadow">
-          <h2 className="text-lg font-semibold mb-4">Archived Products</h2>
-          <ul className="space-y-2">
-            {archivedProducts.map(product => (
-              <li key={product.id} className="flex justify-between">
-                <span>{product.name}</span>
-                <span className="text-gray-500">₱{product.price}</span>
-              </li>
+      {/* Archived Products Table */}
+      <div className="bg-white p-4 rounded shadow mb-6">
+        <h2 className="text-xl font-semibold mb-4">Archived Products</h2>
+        <table className="w-full table-auto">
+          <thead>
+            <tr>
+              <th className="px-4 py-2 text-left">Product Name</th>
+              <th className="px-4 py-2 text-left">Price</th>
+            </tr>
+          </thead>
+          <tbody>
+            {archivedProducts.map((product) => (
+              <tr key={product.id}>
+                <td className="px-4 py-2">{product.name}</td>
+                <td className="px-4 py-2">₱{product.price?.toFixed(2)}</td>
+              </tr>
             ))}
-          </ul>
-        </div>
+          </tbody>
+        </table>
+      </div>
+
+      {/* Weekly Sales Bar Chart */}
+      <div className="bg-white p-4 rounded shadow mb-6">
+        <h2 className="text-xl font-semibold mb-4">Weekly Sales</h2>
+        <ResponsiveContainer width="100%" height={300}>
+          <BarChart data={weeklySales}>
+            <XAxis dataKey="week" />
+            <YAxis />
+            <Tooltip />
+            <Bar dataKey="total_sales" fill="#8884d8" />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      {/* Monthly Sales Line Chart */}
+      <div className="bg-white p-4 rounded shadow mb-6">
+        <h2 className="text-xl font-semibold mb-4">Monthly Sales</h2>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={monthlySales}>
+            <XAxis dataKey="month" />
+            <YAxis />
+            <Tooltip />
+            <CartesianGrid stroke="#ccc" />
+            <Line type="monotone" dataKey="total_sales" stroke="#82ca9d" />
+          </LineChart>
+        </ResponsiveContainer>
       </div>
     </div>
-  )
+  );
 }
