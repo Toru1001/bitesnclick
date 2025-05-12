@@ -25,20 +25,29 @@ const InputVoucherModal: React.FC<InputVoucherModalProps> = ({ onClose, onVouche
   }, []);
 
   const fetchVouchers = async () => {
-    try {
-      const { data, error } = await supabase.from('vouchers').select('voucherid').order('status', { ascending: false });
+  try {
+    const today = new Date().toISOString().split("T")[0];
 
-      if (error) {
-        console.error('Error fetching vouchers:', error);
-        return;
-      }
+    const { data, error } = await supabase
+      .from("vouchers")
+      .select("voucherid")
+      .eq("show_voucher", true)
+      .lte("start_date", today)
+      .gte("end_date", today)
+      .order("status", { ascending: false });
 
-      const voucherIds = data?.map((voucher) => voucher.voucherid) || [];
-      setVouchers(voucherIds);
-    } catch (err) {
-      console.error('Unexpected error fetching vouchers:', err);
+    if (error) {
+      console.error("Error fetching vouchers:", error);
+      return;
     }
-  };
+
+    const voucherIds = data?.map((voucher) => voucher.voucherid) || [];
+    setVouchers(voucherIds);
+  } catch (err) {
+    console.error("Unexpected error fetching vouchers:", err);
+  }
+};
+
 
   const handleVoucherSelection = (voucherCode: string) => {
     console.log('Selected Voucher Code:', voucherCode);
@@ -46,51 +55,66 @@ const InputVoucherModal: React.FC<InputVoucherModalProps> = ({ onClose, onVouche
   };
 
   const handleConfirm = async () => {
-    if (!selectedVoucher) {
-      alert('Please enter or select a voucher code.');
+  if (!selectedVoucher) {
+    alert("Please enter or select a voucher code.");
+    return;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("vouchers")
+      .select("status, start_date, end_date")
+      .eq("code", selectedVoucher)
+      .single();
+
+    if (error) {
+      console.error("Error validating voucher:", error);
+      alert("Failed to validate voucher. Please try again.");
       return;
     }
 
-    try {
-      const { data, error } = await supabase
-        .from('vouchers')
-        .select('status, end_date')
-        .eq('code', selectedVoucher)
-        .single();
-
-      if (error) {
-        console.error('Error validating voucher:', error);
-        alert('Failed to validate voucher. Please try again.');
-        return;
-      }
-
-      if (!data) {
-        alert('Voucher not found.');
-        return;
-      }
-
-      const { status, end_date } = data;
-      const currentDate = new Date();
-
-      if (status !== 'available') {
-        alert('This voucher is not available.');
-        return;
-      }
-
-      if (new Date(end_date) < currentDate) {
-        alert('This voucher has expired.');
-        return;
-      }
-
-      if (onVoucherApply) {
-        onVoucherApply(selectedVoucher);
-      }
-      onClose();
-    } catch (err) {
-      console.error('Unexpected error validating voucher:', err);
-      alert('An unexpected error occurred. Please try again.');
+    if (!data) {
+      alert("Voucher not found.");
+      return;
     }
-  };
+
+    const { status, start_date, end_date } = data;
+    const currentDate = new Date();
+    const startDate = new Date(start_date);
+    const expiryDate = new Date(end_date);
+
+    if (currentDate < startDate) {
+      alert(`This voucher is not yet valid. It will be active on ${startDate.toDateString()}.`);
+      return;
+    }
+
+    if (status === "used") {
+      alert("This voucher code has already been used.");
+      return;
+    }
+
+    if (expiryDate < currentDate) {
+      alert("This voucher code has expired.");
+      return;
+    }
+
+    if (status !== "available") {
+      alert(`This voucher is not available (status: ${status}).`);
+      return;
+    }
+
+    if (onVoucherApply) {
+      onVoucherApply(selectedVoucher);
+    }
+
+    onClose();
+  } catch (err) {
+    console.error("Unexpected error validating voucher:", err);
+    alert("An unexpected error occurred. Please try again.");
+  }
+};
+
+
 
   return (
     <>

@@ -1,4 +1,5 @@
 import ArchivedProducts from "./archived-products";
+import ArchivesTable from "./archives-table";
 
 export default function Home() {
     return (
@@ -9,7 +10,7 @@ export default function Home() {
       </span>
       </div>
       <div className="p-6">
-      <ArchivedProducts />
+      <ArchivesTable />
       </div>
     
   </div>

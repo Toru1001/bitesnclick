@@ -5,7 +5,7 @@ import ConfirmationModal from '../confirmation_modal';
 
 interface PaymentModalProps {
     onClose: () => void;
-    onImageUpload: (imageUrl: string) => void; // Callback to return the image URL to the parent page
+    onImageUpload: (imageUrl: string) => void;
 }
 
 const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, onImageUpload }) => {
@@ -27,7 +27,7 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, onImageUpload }) =
 
     const handleSubmit = async () => {
         if (!selectedFile) {
-            alert('Please select a file to upload.');
+            alert('Proof of payment required to proceed.');
             return;
         }
 
