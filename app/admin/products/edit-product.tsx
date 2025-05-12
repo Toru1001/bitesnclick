@@ -184,7 +184,7 @@ const EditProduct: React.FC<EditProductProps> = ({ onClose, product }) => {
                     Category
                   </label>
                   <select
-                    value={categoryId}
+                    value={product.categoryid}
                     onChange={(e) => setCategoryId(Number(e.target.value))}
                     className={`p-2 border rounded cursor-pointer ${
                       fieldErrors.categoryId
@@ -192,7 +192,7 @@ const EditProduct: React.FC<EditProductProps> = ({ onClose, product }) => {
                         : "border-gray-400"
                     }`}
                   >
-                    <option value="">Select Category</option>
+                    <option value="">{product.category}</option>
                     {categories.map((category) => (
                       <option
                         key={category.categoryid}

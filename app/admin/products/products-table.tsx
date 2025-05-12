@@ -133,7 +133,7 @@ const ProductsTable = () => {
         throw error;
       }
       alert("Product archived.");
-      router.replace("/admin/archives");
+      fetchProducts();
     } catch (err) {
       console.error("Update error:", err);
       alert("Error updating product.");

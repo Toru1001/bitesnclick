@@ -25,6 +25,7 @@ export default function Home() {
   const [cartId, setCartId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmedPayment, setConfirmedPayment] = useState(false);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
   const [paymentImage, setPaymentImage] = useState<string>("");
   const [voucherCode, setVoucherCode] = useState<string | null>(null);
@@ -219,167 +220,172 @@ export default function Home() {
   };
 
   const handleSubmit = () => {
+    if (isPlacingOrder) return;
+
+    setIsPlacingOrder(true);
     if (paymentMethod === "GCASH" && !confirmedPayment) {
       setPaymentModal(true);
+      setIsPlacingOrder(false);
     } else {
       placeOrder();
     }
   };
 
   const placeOrder = async (imageUrl?: string) => {
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    if (!user) {
-      console.warn("User not authenticated");
-      return;
-    }
-
-    if (!paymentMethod) {
-      alert("Please select a payment method.");
-      return;
-    }
-
-    let voucherId = null;
-
-    if (voucherCode) {
-      const { data: voucherData, error: voucherError } = await supabase
-        .from("vouchers")
-        .select("voucherid")
-        .eq("code", voucherCode)
-        .single();
-
-      if (voucherError) {
-        console.error("Error fetching voucher ID:", voucherError);
-      } else {
-        voucherId = voucherData?.voucherid || null;
-      }
-    }
-
-    const messageElement =
-      document.querySelector<HTMLTextAreaElement>("textarea");
-    const message = messageElement?.value || "";
-
-    const orderData = {
-      order_status: "Pending",
-      order_date: new Date().toISOString(),
-      order_price:
-        finalPrice === 0
-          ? (showtotalPrice + 40).toFixed(2)
-          : finalPrice.toFixed(2),
-      message: message,
-      delivery_address: `${address?.street}, ${address?.barangay}, ${address?.city}, Davao Del Sur, ${address?.zipcode}`,
-      customerid: user.id,
-      voucherid: voucherId,
-      paymentMethod: paymentMethod,
-      payment_img: imageUrl ?? null,
-    };
-
-    const { data: orderInsertData, error: orderError } = await supabase
-      .from("orders")
-      .insert(orderData)
-      .select("orderid")
-      .single();
-
-    if (orderError) {
-      console.error("Error placing order:", orderError);
-      return;
-    }
-
-    const orderId = orderInsertData?.orderid;
-
-    if (!orderId) {
-      console.error("Order ID not returned after order insertion.");
-      return;
-    }
-
-    if (voucherId) {
-      const { error: updateVoucherError } = await supabase
-        .from("vouchers")
-        .update({ status: "used" })
-        .eq("voucherid", voucherId);
-
-      if (updateVoucherError) {
-        console.error("Error updating voucher status:", updateVoucherError);
+      if (!user) {
+        console.warn("User not authenticated");
         return;
       }
-    }
 
-    const { data: cartItems, error: cartItemsError } = await supabase
-      .from("cart_items")
-      .select("*, product:productid(price)")
-      .eq("cartid", cartId);
+      if (!paymentMethod) {
+        alert("Please select a payment method.");
+        return;
+      }
 
-    if (cartItemsError) {
-      console.error("Error fetching cart items:", cartItemsError);
-      return;
-    }
+      let voucherId = null;
 
-    if (cartItems && cartItems.length > 0) {
-      const orderDetailsData = [];
-
-      for (const item of cartItems) {
-        const { data: discountData, error: discountError } = await supabase
-          .from("discount")
-          .select("newprice")
-          .eq("productid", item.productid)
-          .lte("start_date", new Date().toISOString())
-          .gte("end_date", new Date().toISOString())
+      if (voucherCode) {
+        const { data: voucherData, error: voucherError } = await supabase
+          .from("vouchers")
+          .select("voucherid")
+          .eq("code", voucherCode)
           .single();
 
-        let finalProdPrice;
-
-        if (discountData && !discountError) {
-          finalProdPrice = discountData.newprice;
+        if (voucherError) {
+          console.error("Error fetching voucher ID:", voucherError);
         } else {
-          finalProdPrice = item.product?.price;
+          voucherId = voucherData?.voucherid || null;
         }
-
-        orderDetailsData.push({
-          orderid: orderId,
-          productid: item.productid,
-          price: item.total_price,
-          quantity: item.quantity,
-          prod_price: finalProdPrice,
-        });
       }
 
-      const { error: orderDetailsError } = await supabase
-        .from("orderdetails")
-        .insert(orderDetailsData);
+      const messageElement =
+        document.querySelector<HTMLTextAreaElement>("textarea");
+      const message = messageElement?.value || "";
 
-      if (orderDetailsError) {
-        console.error("Error inserting order details:", orderDetailsError);
+      const orderData = {
+        order_status: "Pending",
+        order_date: new Date().toISOString(),
+        order_price:
+          finalPrice === 0
+            ? (showtotalPrice + 40).toFixed(2)
+            : finalPrice.toFixed(2),
+        message: message,
+        delivery_address: `${address?.street}, ${address?.barangay}, ${address?.city}, Davao Del Sur, ${address?.zipcode}`,
+        customerid: user.id,
+        voucherid: voucherId,
+        paymentMethod: paymentMethod,
+        payment_img: imageUrl ?? null,
+      };
+
+      const { data: orderInsertData, error: orderError } = await supabase
+        .from("orders")
+        .insert(orderData)
+        .select("orderid")
+        .single();
+
+      if (orderError) {
+        console.error("Error placing order:", orderError);
         return;
       }
 
-      const { error: deleteCartItemsError } = await supabase
+      const orderId = orderInsertData?.orderid;
+
+      if (!orderId) {
+        console.error("Order ID not returned after order insertion.");
+        return;
+      }
+
+      if (voucherId) {
+        const { error: updateVoucherError } = await supabase
+          .from("vouchers")
+          .update({ status: "used" })
+          .eq("voucherid", voucherId);
+
+        if (updateVoucherError) {
+          console.error("Error updating voucher status:", updateVoucherError);
+          return;
+        }
+      }
+
+      const { data: cartItems, error: cartItemsError } = await supabase
         .from("cart_items")
-        .delete()
+        .select("*, product:productid(price)")
         .eq("cartid", cartId);
 
-      if (deleteCartItemsError) {
-        console.error("Error deleting cart items:", deleteCartItemsError);
+      if (cartItemsError) {
+        console.error("Error fetching cart items:", cartItemsError);
         return;
       }
+
+      if (cartItems && cartItems.length > 0) {
+        const orderDetailsData = [];
+
+        for (const item of cartItems) {
+          const { data: discountData, error: discountError } = await supabase
+            .from("discount")
+            .select("newprice")
+            .eq("productid", item.productid)
+            .lte("start_date", new Date().toISOString())
+            .gte("end_date", new Date().toISOString())
+            .single();
+
+          let finalProdPrice;
+
+          if (discountData && !discountError) {
+            finalProdPrice = discountData.newprice;
+          } else {
+            finalProdPrice = item.product?.price;
+          }
+
+          orderDetailsData.push({
+            orderid: orderId,
+            productid: item.productid,
+            price: item.total_price,
+            quantity: item.quantity,
+            prod_price: finalProdPrice,
+          });
+        }
+
+        const { error: orderDetailsError } = await supabase
+          .from("orderdetails")
+          .insert(orderDetailsData);
+
+        if (orderDetailsError) {
+          console.error("Error inserting order details:", orderDetailsError);
+          return;
+        }
+
+        const { error: deleteCartItemsError } = await supabase
+          .from("cart_items")
+          .delete()
+          .eq("cartid", cartId);
+
+        if (deleteCartItemsError) {
+          console.error("Error deleting cart items:", deleteCartItemsError);
+          return;
+        }
+      }
+
+      setSuccessModal(true);
+      console.log(
+        "Order placed, order details inserted, and cart cleared successfully!"
+      );
+
+      setTimeout(() => {
+        router.push("/orders");
+        setSuccessModal(false);
+      }, 4000);
+    } catch (error) {
+      console.error("Unexpected error placing order:", error);
+    } finally {
+      setIsPlacingOrder(false);
     }
-
-    setSuccessModal(true);
-    console.log(
-      "Order placed, order details inserted, and cart cleared successfully!"
-    );
-
-    setTimeout(() => {
-      setSuccessModal(false);
-      router.push("/orders");
-    }, 4000);
-  } catch (error) {
-    console.error("Unexpected error placing order:", error);
-  }
-};
-
+  };
 
   return (
     <>
@@ -525,10 +531,22 @@ export default function Home() {
         </div>
         <div className="flex justify-end my-5">
           <button
-            className="flex gap-x-2 items-center text-2xl font-semibold text-amber-50 bg-[#E19517] rounded-lg px-5 py-2 cursor-pointer mt-5"
+            className={`mt-5 bg-[#E19517] text-2xl text-white w-fit font-bold py-3 px-6 rounded-lg cursor-pointer transition duration-200 ${
+              isPlacingOrder
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-[#d08414]"
+            }`}
             onClick={handleSubmit}
+            disabled={isPlacingOrder}
           >
-            Place Order
+            {isPlacingOrder ? (
+              <div className="flex items-center justify-center gap-2">
+                <ClipLoader color="#fff" size={20} />
+                <span>Placing Order...</span>
+              </div>
+            ) : (
+              "Place Order"
+            )}
           </button>
         </div>
       </div>
