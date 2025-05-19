@@ -150,6 +150,12 @@ const DiscountsTable = () => {
         <ViewDiscount
           onClose={() => setViewDiscount(false)}
           product={selectProduct}
+          onChange={
+            () => {
+              setViewDiscount(false);
+              setEditDiscount(true);
+            }
+          }
         />
       )}
       {editDiscount && (

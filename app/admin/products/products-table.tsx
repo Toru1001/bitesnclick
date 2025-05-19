@@ -144,6 +144,7 @@ const ProductsTable = () => {
     fetchProducts();
   }, []);
 
+
   return (
     <div className="p-4">
       <div className="flex items-center gap-4 mb-4">
@@ -220,10 +221,10 @@ const ProductsTable = () => {
                     }
                   >
                     <SelectTrigger
-                      className={`w-35 ${
+                      className={`w-35 border-1 border-[#E19517] ${
                         product.availability === "Available"
-                          ? "bg-yellow-50 text-black"
-                          : "bg-red-100 text-red-800"
+                          ? "bg-[#E19517] text-amber-50"
+                          : "bg-amber-50 text-[#E19517]"
                       }`}
                     >
                       <SelectValue placeholder={product.availability} />
@@ -278,6 +279,10 @@ const ProductsTable = () => {
         <ViewProduct
           onClose={() => setViewProduct(false)}
           product={selectProduct}
+          onChange={() => {
+            setEditProduct(true);
+            setViewProduct(false);
+          }}
         />
       )}
       {editProduct && (

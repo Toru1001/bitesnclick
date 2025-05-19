@@ -5,6 +5,7 @@ import {
   faClipboardCheck,
   faMugHot,
   faTruckFast,
+  faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
@@ -32,7 +33,9 @@ const OrderDetails: React.FC = () => {
 
         const { data, error } = await supabase
           .from("orders")
-          .select("*, customers(first_name, last_name, mobile_num), vouchers(name, percent)")
+          .select(
+            "*, customers(first_name, last_name, mobile_num), vouchers(name, percent)"
+          )
           .eq("orderid", id)
           .eq("customerid", user?.id)
           .single();
@@ -70,78 +73,42 @@ const OrderDetails: React.FC = () => {
   const getStatusIcon = (status: string, color: string) => {
     switch (status) {
       case "Pending":
-        return (
-          <FontAwesomeIcon
-            icon={faCartPlus}
-            className={`${color}`}
-          />
-        );
+        return <FontAwesomeIcon icon={faCartPlus} className={`${color}`} />;
       case "Processing":
         return <RefreshCcwDot className={`${color}`} />;
       case "Brewing":
-        return (
-          <FontAwesomeIcon icon={faMugHot} className={`${color}`} />
-        );
+        return <FontAwesomeIcon icon={faMugHot} className={`${color}`} />;
       case "Shipped":
-        return (
-          <FontAwesomeIcon
-            icon={faTruckFast}
-            className={`${color}`}
-          />
-        );
+        return <FontAwesomeIcon icon={faTruckFast} className={`${color}`} />;
       case "Order Complete":
         return (
-          <FontAwesomeIcon
-            icon={faClipboardCheck}
-            className={`${color}`}
-          />
+          <FontAwesomeIcon icon={faClipboardCheck} className={`${color}`} />
+        );
+      case "Cancelled":
+        return (
+          <FontAwesomeIcon icon={faXmark} className="text-[#E19517] text-2xl" />
         );
       default:
-        return (
-          <FontAwesomeIcon
-            icon={faCartPlus}
-            className={`${color}`}
-          />
-        );
+        return <FontAwesomeIcon icon={faCartPlus} className={`${color}`} />;
     }
   };
 
   const getProgressIcon = (status: string, color: string) => {
     switch (status) {
       case "Order Placed":
-        return (
-          <FontAwesomeIcon
-            icon={faCartPlus}
-            className={`${color}`}
-          />
-        );
+        return <FontAwesomeIcon icon={faCartPlus} className={`${color}`} />;
       case "Payment info confirmed":
         return <RefreshCcwDot className={`${color}`} />;
       case "Brewing":
-        return (
-          <FontAwesomeIcon icon={faMugHot} className={`${color}`} />
-        );
+        return <FontAwesomeIcon icon={faMugHot} className={`${color}`} />;
       case "On Delivery":
-        return (
-          <FontAwesomeIcon
-            icon={faTruckFast}
-            className={`${color}`}
-          />
-        );
+        return <FontAwesomeIcon icon={faTruckFast} className={`${color}`} />;
       case "Order Complete":
         return (
-          <FontAwesomeIcon
-            icon={faClipboardCheck}
-            className={`${color}`}
-          />
+          <FontAwesomeIcon icon={faClipboardCheck} className={`${color}`} />
         );
       default:
-        return (
-          <FontAwesomeIcon
-            icon={faCartPlus}
-            className={`${color}`}
-          />
-        );
+        return <FontAwesomeIcon icon={faCartPlus} className={`${color}`} />;
     }
   };
   return (
@@ -152,7 +119,12 @@ const OrderDetails: React.FC = () => {
         </span>
         <div className="flex flex-col items-center justify-between gap-y-3 mt-3 w-full">
           <div className="flex items-center justify-between gap-y-3 w-full px-5 py-4 shadow-[0_3px_10px_rgb(0,0,0,0.2)]">
-            <span className="text-lg text-gray-500 cursor-pointer" onClick={() => router.back()}>{"< Back"}</span>
+            <span
+              className="text-lg text-gray-500 cursor-pointer"
+              onClick={() => router.back()}
+            >
+              {"< Back"}
+            </span>
             <div className="flex gap-x-5">
               <span className="text-lg text-gray-500 pr-5 border-r-1 border-gray-600">
                 Order ID: #{id}
@@ -262,28 +234,51 @@ const OrderDetails: React.FC = () => {
                   </span>
                 </div>
                 <div className="flex flex-col pl-8 mt-2 font-semibold">
-                    <span>{orders?.name}</span>
-                    <span>{orders?.mobile_num}</span>
+                  <span>{orders?.name}</span>
+                  <span>{orders?.mobile_num}</span>
                 </div>
                 <span className="text-gray-500 pl-8 mt-2 w-60">
-                    {orders?.delivery_address}
+                  {orders?.delivery_address}
                 </span>
               </div>
 
               <div className="flex flex-col gap-y-2 mt-2">
-                {["Order Placed", "Payment info confirmed", "Brewing", "On Delivery", "Order Complete"].map((status, index) => {
-                    const statusOrder = ["Pending", "Processing", "Brewing", "Shipped", "Order Complete"];
-                    const currentStatusIndex = statusOrder.indexOf(orders?.order_status || "");
-                    const isHighlighted = index <= currentStatusIndex;
+                {[
+                  "Order Placed",
+                  "Payment info confirmed",
+                  "Brewing",
+                  "On Delivery",
+                  "Order Complete",
+                ].map((status, index) => {
+                  const statusOrder = [
+                    "Pending",
+                    "Processing",
+                    "Brewing",
+                    "Shipped",
+                    "Order Complete",
+                  ];
+                  const currentStatusIndex = statusOrder.indexOf(
+                    orders?.order_status || ""
+                  );
+                  const isHighlighted = index <= currentStatusIndex;
 
-                    return (
-                        <div key={status} className="flex items-center gap-x-2">
-                        {getProgressIcon(status, isHighlighted ? "text-[#E19517] text-xl" : "text-gray-500 text-xl")}
-                        <span className={isHighlighted ? "text-[#E19517]" : "text-gray-500"}>
-                            {status}
-                        </span>
-                        </div>
-                    );
+                  return (
+                    <div key={status} className="flex items-center gap-x-2">
+                      {getProgressIcon(
+                        status,
+                        isHighlighted
+                          ? "text-[#E19517] text-xl"
+                          : "text-gray-500 text-xl"
+                      )}
+                      <span
+                        className={
+                          isHighlighted ? "text-[#E19517]" : "text-gray-500"
+                        }
+                      >
+                        {status}
+                      </span>
+                    </div>
+                  );
                 })}
               </div>
             </div>

@@ -186,13 +186,13 @@ const EditDiscountModal: React.FC<EditProductProps> = ({ onClose, product }) => 
               <button
                 type="button"
                 onClick={onClose}
-                className="border border-[#E19517] text-[#E19517] px-4 py-2 rounded hover:bg-gray-300"
+                className="border border-[#E19517] text-[#E19517] px-4 py-2 rounded hover:bg-gray-300 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="bg-[#E19517] text-white px-4 py-2 rounded hover:bg-[#E19517]/80"
+                className="bg-[#E19517] text-white px-4 py-2 rounded hover:bg-[#E19517]/80 cursor-pointer"
               >
                 Set Discount
               </button>

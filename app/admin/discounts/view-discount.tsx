@@ -5,9 +5,10 @@ import { PenLine, X } from "lucide-react";
 interface ViewDiscountProps {
   onClose: () => void;
   product: any;
+  onChange: () => void;
 }
 
-const ViewDiscount: React.FC<ViewDiscountProps> = ({ onClose, product }) => {
+const ViewDiscount: React.FC<ViewDiscountProps> = ({ onClose, product, onChange }) => {
   const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
       onClose();
@@ -89,8 +90,8 @@ const ViewDiscount: React.FC<ViewDiscountProps> = ({ onClose, product }) => {
             </div>
             <div className="flex justify-center my-5">
               <button
-                className="flex gap-x-2 items-center text-lg text-[#E19517] bg-amber-50 border-1 border-[#E19517] hover:bg-[#E19517] hover:text-amber-50 rounded-lg px-5 py-2 cursor-pointer"
-                // onClick={() =>{handleAddToCart(); onMessage?.("Item added to cart")}}
+                className="flex gap-x-2 items-center text-lg border-1 border-[#E19517] text-amber-50 bg-[#E19517] hover:bg-amber-50 hover:text-[#E19517] rounded-lg px-5 py-2 cursor-pointer"
+                onClick={onChange}
               >
                 <span>Edit</span>
                 <PenLine size={18} />

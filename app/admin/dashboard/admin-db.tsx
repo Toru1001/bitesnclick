@@ -16,7 +16,7 @@ import {
 } from 'recharts';
 
 interface Product {
-  id: number;
+  productid: number;
   name: string;
   price: number;
   is_archived: boolean;
@@ -26,7 +26,7 @@ interface Discount {
   newprice: any;
   products: any;
   discountid: number;
-  product_id: number;
+  productid: number;
   discount_percent: number;
   new_price: number;
   start_date: string;
@@ -60,6 +60,7 @@ export default function AdminDashboard() {
       if (discountsError) {
         console.error('Error fetching discounted products:', discountsError.message);
       } else {
+        console.log(discountsData);
         setDiscountedProducts(discountsData || []);
       }
 
@@ -115,6 +116,7 @@ export default function AdminDashboard() {
       if (monthlyError) {
         console.error('Error fetching monthly sales data:', monthlyError.message);
       } else {
+        // console.log(discountedProductsdiscountid)
         setMonthlySales(monthlyData || []);
       }
     };
@@ -125,21 +127,21 @@ export default function AdminDashboard() {
   return (
     <div className="p-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white p-4 rounded-xl shadow">
-          <h2 className="text-sm text-gray-500">Total Products</h2>
+        <div className="bg-white border-t-5 border-[#E19517] p-4 rounded-lg shadow-[0px_4px_16px_rgba(17,17,26,0.1),_0px_8px_24px_rgba(17,17,26,0.1),_0px_16px_56px_rgba(17,17,26,0.1)]">
+          <h2 className="text-lg">Total Products</h2>
           <p className="text-2xl font-semibold">{totalProducts}</p>
         </div>
-        <div className="bg-white p-4 rounded shadow">
-          <h2 className="text-lg font-semibold">Incoming Orders</h2>
-          <p className="text-2xl">{incomingOrders}</p>
+        <div className="bg-white p-4 border-t-5 border-[#E19517] rounded-lg shadow-[0px_4px_16px_rgba(17,17,26,0.1),_0px_8px_24px_rgba(17,17,26,0.1),_0px_16px_56px_rgba(17,17,26,0.1)]">
+          <h2 className="text-lg">Incoming Orders</h2>
+          <p className="text-2xl font-semibold">{incomingOrders}</p>
         </div>
-        <div className="bg-white p-4 rounded shadow">
-          <h2 className="text-lg font-semibold">Discounted Products</h2>
-          <p className="text-2xl">{discountedProducts.length}</p>
+        <div className="bg-white p-4 border-t-5 border-[#E19517] rounded-lg shadow-[0px_4px_16px_rgba(17,17,26,0.1),_0px_8px_24px_rgba(17,17,26,0.1),_0px_16px_56px_rgba(17,17,26,0.1)]">
+          <h2 className="text-lg">Discounted Products</h2>
+          <p className="text-2xl font-semibold">{discountedProducts.length}</p>
         </div>
-        <div className="bg-white p-4 rounded shadow">
-          <h2 className="text-lg font-semibold">Archived Products</h2>
-          <p className="text-2xl">{archivedProducts.length}</p>
+        <div className="bg-white p-4 border-t-5 border-[#E19517] rounded-lg shadow-[0px_4px_16px_rgba(17,17,26,0.1),_0px_8px_24px_rgba(17,17,26,0.1),_0px_16px_56px_rgba(17,17,26,0.1)]">
+          <h2 className="text-lg">Archived Products</h2>
+          <p className="text-2xl font-semibold">{archivedProducts.length}</p>
         </div>
       </div>
 
@@ -159,7 +161,7 @@ export default function AdminDashboard() {
           </thead>
           <tbody>
             {discountedProducts.map((discount) => (
-              <tr key={discount.discountid}>
+              <tr key={discount.productid}>
                 <td className="px-4 py-2">{discount.products.name}</td>
                 <td className="px-4 py-2">₱{discount.products.price?.toFixed(2)}</td>
                 <td className="px-4 py-2">{discount.discount_percent}%</td>
@@ -184,7 +186,7 @@ export default function AdminDashboard() {
           </thead>
           <tbody>
             {archivedProducts.map((product) => (
-              <tr key={product.id}>
+              <tr key={product.productid}>
                 <td className="px-4 py-2">{product.name}</td>
                 <td className="px-4 py-2">₱{product.price?.toFixed(2)}</td>
               </tr>
@@ -201,7 +203,7 @@ export default function AdminDashboard() {
             <XAxis dataKey="week" />
             <YAxis />
             <Tooltip />
-            <Bar dataKey="total_sales" fill="#8884d8" />
+            <Bar dataKey="total_sales" fill="#E19517" />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -215,7 +217,7 @@ export default function AdminDashboard() {
             <YAxis />
             <Tooltip />
             <CartesianGrid stroke="#ccc" />
-            <Line type="monotone" dataKey="total_sales" stroke="#82ca9d" />
+            <Line type="monotone" dataKey="total_sales" stroke="#E19517" />
           </LineChart>
         </ResponsiveContainer>
       </div>

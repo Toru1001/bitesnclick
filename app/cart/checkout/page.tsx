@@ -581,7 +581,7 @@ export default function Home() {
         />
       )}
       {successModal && <SuccessModal onClose={() => setSuccessModal(false)} />}
-      <ToastContainer theme="light" position="bottom-right" />
+      <ToastContainer theme="light" position="bottom-left" />
     </>
   );
 }

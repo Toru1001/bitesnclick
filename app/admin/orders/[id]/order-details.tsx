@@ -19,13 +19,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import Image from "next/image";
+import InvoiceModal from "../../invoice/invoice-modal";
+import Invoice2 from "../../invoice/invoice";
 
 const OrderDetails: React.FC = () => {
   const id = Number(useParams().id);
   const [orderDetails, setOrderDetails] = useState<any>();
   const [subtotal, setSubtotal] = useState<number>(0);
-  const [status, setStatus] = useState("Pending");
+  const [invoice, viewInvoice] = useState(false);
 
   const handleData = (subTotal: number) => {
     setSubtotal(subTotal);
@@ -178,6 +179,8 @@ const OrderDetails: React.FC = () => {
               </DialogContent>
             </Dialog>
             <Button
+            onClick={() => {
+              viewInvoice(true)}}
               variant="outline"
               className="border-1 border-[#E19517] text-[#E19517] hover:bg-[#E19517] hover:text-white font-semibold  text-xs rounded cursor-pointer"
             >
@@ -234,12 +237,12 @@ const OrderDetails: React.FC = () => {
                   <div className="flex justify-between">
                     <span>Subtotal:</span>
                     <span className="text-gray-600">
-                      ₱ {subtotal.toFixed(1)}
+                      ₱ {subtotal.toFixed(2)}
                     </span>
                   </div>
                   <div className="flex justify-between">
                     <span className="">Delivery fee:</span>
-                    <span className="text-gray-600">₱ 40.0</span>
+                    <span className="text-gray-600">₱ 40.00</span>
                   </div>
                   <div className="flex justify-between items-end">
                     <span>Voucher:</span>
@@ -250,7 +253,7 @@ const OrderDetails: React.FC = () => {
                   <div className="flex justify-between">
                     <span className="text-2xl">Total:</span>
                     <span className="text-2xl text-[#E19517] font-semibold">
-                      ₱ {(orderDetails[0].order_price).toFixed(1)}
+                      ₱ {(orderDetails[0].order_price).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -273,6 +276,16 @@ const OrderDetails: React.FC = () => {
             </div>
           </div>
         </div>
+        {
+          invoice && (
+            <InvoiceModal
+              onClose={() => {
+                viewInvoice(false);
+              }}
+              orderid={id}
+            />
+          )
+        }
       </div>
     )
   );

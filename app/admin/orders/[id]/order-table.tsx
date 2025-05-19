@@ -8,15 +8,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { supabase } from "@/app/lib/supabase";
 import { useParams, useRouter } from "next/navigation";
 
@@ -25,8 +16,6 @@ interface OrderTableProps{
 }
 
 const OrderTable: React.FC<OrderTableProps> = ({ onData }) => {
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState<string>("");
   const [orderDetails, setOrderDetails] = useState<any>([]);
   const id = Number(useParams().id);
   const [subtotal, setSubtotal] = useState<number>(0);
@@ -36,7 +25,7 @@ const OrderTable: React.FC<OrderTableProps> = ({ onData }) => {
     try {
       const { data, error } = await supabase
         .from("orderdetails")
-        .select("id,quantity, price,products(name,price, category(name))")
+        .select("*,products(name,price, category(name))")
         .eq("orderid" , id)
 
       if (error) {
@@ -85,7 +74,7 @@ const OrderTable: React.FC<OrderTableProps> = ({ onData }) => {
               <TableCell className="text-center">
                 {order.products?.category?.name}
               </TableCell>
-              <TableCell className="text-center">{order.products?.price.toFixed(2)}</TableCell>
+              <TableCell className="text-center">{order.prod_price.toFixed(2)}</TableCell>
               <TableCell  className="text-center">{order.quantity}x</TableCell>
               <TableCell className="text-center">₱ {order.price.toFixed(2)}</TableCell>
             </TableRow>

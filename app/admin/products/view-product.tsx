@@ -5,9 +5,10 @@ import { PenLine, X } from "lucide-react";
 interface ViewProductProps {
   onClose: () => void;
   product: any;
+  onChange: () => void;
 }
 
-const ViewProduct: React.FC<ViewProductProps> = ({ onClose, product }) => {
+const ViewProduct: React.FC<ViewProductProps> = ({ onClose, product, onChange }) => {
   const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
       onClose();
@@ -60,8 +61,8 @@ const ViewProduct: React.FC<ViewProductProps> = ({ onClose, product }) => {
                     <span
                       className={
                         product.availability === "Available"
-                          ? "px-2 py-1 rounded-2xl bg-green-500 text-amber-50"
-                          : "px-2 py-1 rounded-2xl bg-red-500 text-amber-50"
+                          ? "px-2 py-1 rounded-2xl border-1 border-[#E19517] bg-[#E19517] text-amber-50 "
+                          : "px-2 py-1 rounded-2xl border-1 border-[#E19517] bg-amber-50 text-[#E19517]"
                       }
                     >
                       {product.availability}
@@ -74,8 +75,8 @@ const ViewProduct: React.FC<ViewProductProps> = ({ onClose, product }) => {
                 </div>
               </div>
                 <div className="flex justify-center my-5">
-                                  <button className="flex gap-x-2 items-center text-lg text-amber-50 bg-[#E19517] rounded-lg px-5 py-2 cursor-pointer" 
-                                  // onClick={() =>{handleAddToCart(); onMessage?.("Item added to cart")}}
+                                  <button className="flex gap-x-2 items-center text-lg border-1 border-[#E19517] text-amber-50 bg-[#E19517] hover:bg-amber-50 hover:text-[#E19517] rounded-lg px-5 py-2 cursor-pointer" 
+                                  onClick={onChange}
                                   >
                                     <span>Edit</span>
                                     <PenLine size={18}/>
