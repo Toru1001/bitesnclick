@@ -218,6 +218,10 @@ const ArchivesTable = () => {
         <ViewProduct
           onClose={() => setViewProduct(false)}
           product={selectProduct}
+          onChange={() => {
+            setViewProduct(false);
+            setEditProduct(true);
+          }}
         />
       )}
       {editProduct && (

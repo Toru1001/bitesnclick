@@ -24,6 +24,7 @@ const ProductSection: React.FC = () => {
               .from('products')
               .select('*, category(categoryid,name)')
               .order('productid', { ascending: false })
+              .eq("isarchive", false)
               .limit(4);
       
             if (error) {
