@@ -125,7 +125,7 @@ export default function Home() {
             }}
           />
         )}
-        <ToastContainer theme="light" position="bottom-right" />
+        <ToastContainer theme="light" position="bottom-left" />
       </div>
     </>
   );

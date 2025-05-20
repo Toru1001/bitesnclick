@@ -377,6 +377,7 @@ export default function Home() {
       );
 
       setTimeout(() => {
+        setIsPlacingOrder(true);
         router.push("/orders");
         setSuccessModal(false);
       }, 4000);
