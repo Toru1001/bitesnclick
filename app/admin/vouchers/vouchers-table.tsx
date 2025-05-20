@@ -46,7 +46,7 @@ const VouchersTable = () => {
   const fetchDiscountedProducts = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.from("vouchers").select("*");
+      const { data, error } = await supabase.from("vouchers").select("*").order('status', { ascending: true });
 
       if (error) {
         alert("Connection timeout");
