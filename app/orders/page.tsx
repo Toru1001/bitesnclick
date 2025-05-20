@@ -2,6 +2,7 @@
 import { useState } from "react";
 import OngoingTab from "./ongoing_tab";
 import CompletedTab from "./completed_tab";
+import CancelledTab from "./cancelled_tab";
 
 export default function Home() {
     const [activeTab, setActiveTab] = useState("ongoing");
@@ -29,6 +30,15 @@ export default function Home() {
                     >
                         <span>Completed</span>
                     </div>
+
+                    <div
+                        className={`flex justify-center w-80 pb-1 cursor-pointer ${
+                            activeTab === "cancelled" ? "border-b-2 border-[#E19517]" : ""
+                        }`}
+                        onClick={() => setActiveTab("cancelled")}
+                    >
+                        <span>Cancelled</span>
+                    </div>
                 </div>
                 {/* Dynamic Pages */}
                 <div className="w-full mt-5">
@@ -37,6 +47,9 @@ export default function Home() {
                     )}
                     {activeTab === "completed" && (
                         <CompletedTab />
+                    )}
+                    {activeTab === "cancelled" && (
+                        <CancelledTab />
                     )}
                 </div>
             </div>

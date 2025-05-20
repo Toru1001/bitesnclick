@@ -40,7 +40,7 @@ export default function Home() {
 
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true); // Start loading
+      setLoading(true);
       try {
         // Fetch categories from the category table
         const { data: categoryData, error: categoryError } = await supabase
@@ -67,7 +67,7 @@ export default function Home() {
           setFilteredProducts(productData);
         }
       } finally {
-        setLoading(false); // Stop loading
+        setLoading(false);
       }
     };
 
@@ -125,7 +125,7 @@ export default function Home() {
             }}
           />
         )}
-        <ToastContainer theme="light" position="bottom-right" />
+        <ToastContainer theme="light" position="bottom-left" />
       </div>
     </>
   );

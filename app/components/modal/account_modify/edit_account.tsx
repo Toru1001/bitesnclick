@@ -31,10 +31,7 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
   useEffect(() => {
     setLoading(true);
     const fetchCustomerDetails = async () => {
-      const {
-        data: { user },
-        error: userError,
-      } = await supabase.auth.getUser();
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
 
       if (user) {
         const { data, error } = await supabase
@@ -47,47 +44,97 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
           setError(error.message);
         } else {
           setCustomerDetails(data);
-          setLoading(false);
         }
       } else {
         router.replace('/');
         setError('User not logged in.');
       }
+      setLoading(false);
     };
 
     fetchCustomerDetails();
   }, []);
 
-  // if (loading) {
-  //   return (
-  //     <div className="flex items-center justify-center h-screen">
-  //       <ClipLoader color="#E19517" size={50} />
-  //     </div>
-  //   );
-  // }
-
   const handleEditAccount = async () => {
     if (!formRef.current) return;
     const form = formRef.current;
-    const firstName = form.firstName.value;
-    const lastName = form.lastName.value;
-    const displayName = `${firstName} ${lastName}`;
-    const mobileNumber = form.mobileNumber.value;
-    const streetAddress = form.streetAddress.value;
-    const city = form.city.value;
-    const barangay = form.barangay.value;
-    const zipCode = form.zipCode.value;
+
+    const firstName = form.firstName.value.trim();
+    const lastName = form.lastName.value.trim();
+    const mobileNumber = form.mobileNumber.value.trim();
+    const streetAddress = form.streetAddress.value.trim();
+    const city = form.city.value.trim();
+    const barangay = form.barangay.value.trim();
 
     const oldPassword = form.oldPassword?.value;
     const newPassword = form.newPassword?.value;
     const confirmPassword = form.rePassword?.value;
 
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    Array.from(form.elements).forEach((el) => {
+      if (el instanceof HTMLInputElement) {
+        el.classList.remove('border-red-500');
+      }
+    });
 
+    // Validation
+    const requiredFields = [
+      { name: 'firstName', value: firstName },
+      { name: 'lastName', value: lastName },
+      { name: 'mobileNumber', value: mobileNumber },
+      { name: 'streetAddress', value: streetAddress },
+      { name: 'city', value: city },
+      { name: 'barangay', value: barangay },
+    ];
+
+    let hasError = false;
+    requiredFields.forEach(({ name, value }) => {
+      const input = form[name];
+      if (!value) {
+        input.classList.add('border-red-500');
+        hasError = true;
+      }
+    });
+
+    if (hasError) {
+      setError('Please fill in all required fields.');
+      alert('Please fill in all required fields.');
+      return;
+    }
+
+    if (showEditPassword) {
+      if (!oldPassword || !newPassword || !confirmPassword) {
+        if (!oldPassword) form.oldPassword.classList.add('border-red-500');
+        if (!newPassword) form.newPassword.classList.add('border-red-500');
+        if (!confirmPassword) form.rePassword.classList.add('border-red-500');
+
+        setError('Please fill in all password fields.');
+        alert('Please fill in all password fields.');
+        return;
+      }
+
+      if (newPassword !== confirmPassword) {
+        form.newPassword.classList.add('border-red-500');
+        form.rePassword.classList.add('border-red-500');
+        setError('New password and confirmation do not match.');
+        alert('New password and confirmation do not match.');
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        form.newPassword.classList.add('border-red-500');
+        setError('Password must be at least 6 characters.');
+        alert('Password must be at least 6 characters.');
+        return;
+      }
+    }
+
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
     if (!user) {
       setError('User not found.');
       return;
     }
+
+    const displayName = `${firstName} ${lastName}`;
 
     try {
       const { error: updateError } = await supabase
@@ -99,7 +146,6 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
           street_address: streetAddress,
           city,
           barangay,
-          zipcode: zipCode,
         })
         .eq('customerid', user.id);
 
@@ -112,18 +158,6 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
       if (authError) throw new Error(authError.message);
 
       if (showEditPassword) {
-        if (!oldPassword || !newPassword || !confirmPassword) {
-          throw new Error('Please fill in all password fields.');
-        }
-
-        if (newPassword !== confirmPassword) {
-          throw new Error('New password and confirmation do not match.');
-        }
-
-        if (newPassword.length < 6) {
-          throw new Error('Password must be at least 6 characters.');
-        }
-
         const { error: signInError } = await supabase.auth.signInWithPassword({
           email: customerDetails.email,
           password: oldPassword,
@@ -144,15 +178,19 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
     } catch (err: any) {
       console.error('Error updating account:', err.message);
       setError(err.message);
+      alert(err.message);
     }
   };
 
   const handleDeleteAccount = async () => {
+    setShowDeleteConfirmationModal(false);
+    setLoading(true);
     try {
       const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
+  
       if (!user) {
         setError('User not found.');
+        setLoading(false);
         return;
       }
   
@@ -162,33 +200,36 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
         },
+        body: JSON.stringify({ userId: user.id }),
       });
   
       const responseData = await response.json();
+      console.log('Response:', responseData);
   
       if (!response.ok) {
         setError(responseData.error || 'Failed to delete account');
+        setLoading(false);
         return;
       }
   
       if (responseData.success) {
+        alert("Account deleted successfully.");
         localStorage.clear();
         router.replace('/');
         window.location.reload();
-        onClose();
       } else {
         setError('An error occurred while deleting the account.');
+        setLoading(false);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error deleting account:', err);
+      setError(err.message || 'Unexpected error occurred.');
+      setLoading(false);
     }
   };
   
-  
-  
 
   return (
-
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-30" onClick={handleOverlayClick}>
       <div className="relative flex flex-col bg-white rounded-lg shadow-lg w-full md:w-fit h-full md:h-140 my-10 p-10 overflow-scroll [&::-webkit-scrollbar]:hidden scrollbar-thin scrollbar-none" onClick={(e) => e.stopPropagation()}>
         <button
@@ -200,43 +241,42 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
         <div className="flex w-full justify-center border-b-3 pb-2 border-[#E19517]">
           <span className="font-semibold text-xl">Edit Profile</span>
         </div>
-        {loading ? (
-          <div className="flex items-center justify-center  w-110 h-90">
+
+        {loading && (
+          <div className="inset-0 z-40 bg-white/60 w-138 h-100 flex items-center justify-center rounded-lg">
             <ClipLoader color="#E19517" size={50} />
           </div>
-        ) : (
+        )}
+
+        {!loading && (
           <div className="mx-5">
-    <form ref={formRef} className="space-y-2 mt-5 w-full" onSubmit={(e) => {
-              e.preventDefault();
-              setShowConfirmationModal(true);
-            }}>
-              {error && <p className="text-red-500 ">{error}</p>}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 gap-x-10 w-full">
-              <div className="w-full">
-                <label htmlFor="first-name" className="block text-sm font-medium text-[#240C03]">
-                  First Name
-                </label>
-                <input
-                  type="text"
-                  id="first-name"
-                  name="firstName"
-                  defaultValue={customerDetails?.first_name || ''}
-                  className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
-                />
-              </div>
-              <div className="w-full">
-                <label htmlFor="last-name" className="block text-sm font-medium text-[#240C03]">
-                  Last Name
-                </label>
-                <input
-                  type="text"
-                  id="last-name"
-                  name="lastName"
-                  defaultValue={customerDetails?.last_name || ''}
-                  className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
-                />
-              </div>
-              <div className="w-full">
+            <form ref={formRef} className="space-y-2 mt-5 w-full" onSubmit={(e) => { e.preventDefault(); setShowConfirmationModal(true); }}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 gap-x-10 w-full">
+                <div className="w-full">
+                  <label htmlFor="first-name" className="block text-sm font-medium text-[#240C03]">
+                    First Name
+                  </label>
+                  <input
+                    type="text"
+                    id="first-name"
+                    name="firstName"
+                    defaultValue={customerDetails?.first_name || ''}
+                    className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
+                  />
+                </div>
+                <div className="w-full">
+                  <label htmlFor="last-name" className="block text-sm font-medium text-[#240C03]">
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    id="last-name"
+                    name="lastName"
+                    defaultValue={customerDetails?.last_name || ''}
+                    className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
+                  />
+                </div>
+                <div className="w-full">
                 <label htmlFor="email" className="block text-sm font-medium text-[#240C03]">
                   Email Address
                 </label>
@@ -305,8 +345,9 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
                   type="text"
                   id="zip-code"
                   name="zipCode"
-                  defaultValue={customerDetails?.zipcode || ''}
+                  placeholder={customerDetails?.zipcode || ''}
                   className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
+                  readOnly
                 />
               </div>
               <div className="flex items-center mt-3">
@@ -388,33 +429,33 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
     </div>
   </>
     )}
-
-            </div>
-            <div className="flex justify-between items-center pt-6">
-              <a onClick={() => setShowDeleteConfirmationModal(true)} className="font-light text-sm text-gray-400 underline cursor-pointer">
-                Delete Account
-              </a>
-              <div className="flex gap-x-2">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="border-2 border-[#E19517] rounded-lg py-1 px-4 cursor-pointer text-[#E19517] font-medium"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="border-2 border-[#E19517] bg-[#E19517] rounded-lg py-1 px-4 cursor-pointer text-amber-50 font-medium"
-                >
-                  Update
-                </button>
               </div>
-            </div>
-          </form>
-        </div>
+              <div className="flex justify-between items-center pt-6">
+                <a onClick={() => setShowDeleteConfirmationModal(true)} className="font-light text-sm text-gray-400 underline cursor-pointer">
+                  Delete Account
+                </a>
+                <div className="flex gap-x-2">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="border-2 border-[#E19517] rounded-lg py-1 px-4 cursor-pointer text-[#E19517] font-medium"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="border-2 border-[#E19517] bg-[#E19517] rounded-lg py-1 px-4 cursor-pointer text-amber-50 font-medium"
+                  >
+                    Update
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
         )}
-        
+
       </div>
+
       {showConfirmationModal && (
         <ConfirmationModal
           onClose={() => setShowConfirmationModal(false)}
@@ -424,15 +465,16 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
           description="Are you sure you want to update your account?"
         />
       )}
+
       {showDeleteConfirmationModal && (
-  <ConfirmationModal
-    onClose={() => setShowDeleteConfirmationModal(false)}
-    onConfirm={handleDeleteAccount}
-    buttonText="Delete"
-    title="Delete Account"
-    description= "Are you sure you want to permanently delete your account?"
-  />
-)}
+        <ConfirmationModal
+          onClose={() => setShowDeleteConfirmationModal(false)}
+          onConfirm={handleDeleteAccount}
+          buttonText="Delete"
+          title="Delete Account"
+          description="Are you sure you want to permanently delete your account?"
+        />
+      )}
     </div>
   );
 };

@@ -10,6 +10,7 @@ import InputVoucherModal from "@/app/components/modal/orders_modify/inputVoucher
 import { useRouter } from "next/dist/client/components/navigation";
 import PaymentModal from "@/app/components/modal/orders_modify/payment_modal";
 import SuccessModal from "@/app/components/modal/success_modal";
+import { toast, ToastContainer } from "react-toastify";
 
 export default function Home() {
   const router = useRouter();
@@ -24,6 +25,7 @@ export default function Home() {
   const [cartId, setCartId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [confirmedPayment, setConfirmedPayment] = useState(false);
+  const [isPlacingOrder, setIsPlacingOrder] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<string | null>(null);
   const [paymentImage, setPaymentImage] = useState<string>("");
   const [voucherCode, setVoucherCode] = useState<string | null>(null);
@@ -35,6 +37,7 @@ export default function Home() {
     city: string;
     zipcode: string;
   } | null>(null);
+  const notify = (message: string) => toast.success(message);
 
   const calculateFinalPrice = (totalPrice: number, discount: number) => {
     if (totalPrice === 0) {
@@ -201,6 +204,7 @@ export default function Home() {
         setVoucherDiscount(data.percent);
         setVoucherCode(voucher);
         calculateFinalPrice(showtotalPrice, data.percent);
+        notify("Voucher applied successfully.");
       } else {
         console.log("No voucher found with the given code.");
       }
@@ -211,27 +215,23 @@ export default function Home() {
 
   const handlePaymentMethodChange = (method: string) => {
     console.log("Selected payment method:", method);
+    notify("Payment method saved successfully.");
     setPaymentMethod(method);
   };
 
   const handleSubmit = () => {
+    if (isPlacingOrder) return;
+
+    setIsPlacingOrder(true);
     if (paymentMethod === "GCASH" && !confirmedPayment) {
       setPaymentModal(true);
+      setIsPlacingOrder(false);
     } else {
       placeOrder();
     }
   };
 
-  const handleImageUpload = (imageUrl: string) => {
-    setConfirmedPayment(true);
-    setPaymentImage(imageUrl);
-    console.log(imageUrl);
-    if (paymentMethod === "GCASH") {
-      placeOrder();
-    }
-  };
-
-  const placeOrder = async ( imageUrl? : string) => {
+  const placeOrder = async (imageUrl?: string) => {
     try {
       const {
         data: { user },
@@ -243,7 +243,7 @@ export default function Home() {
       }
 
       if (!paymentMethod) {
-        alert("Please select a payment method before placing the order.");
+        alert("Please select a payment method.");
         return;
       }
 
@@ -281,7 +281,7 @@ export default function Home() {
         paymentMethod: paymentMethod,
         payment_img: imageUrl ?? null,
       };
-      console.log(imageUrl);
+
       const { data: orderInsertData, error: orderError } = await supabase
         .from("orders")
         .insert(orderData)
@@ -314,7 +314,7 @@ export default function Home() {
 
       const { data: cartItems, error: cartItemsError } = await supabase
         .from("cart_items")
-        .select("productid, total_price, quantity")
+        .select("*, product:productid(price)")
         .eq("cartid", cartId);
 
       if (cartItemsError) {
@@ -323,12 +323,33 @@ export default function Home() {
       }
 
       if (cartItems && cartItems.length > 0) {
-        const orderDetailsData = cartItems.map((item) => ({
-          orderid: orderId,
-          productid: item.productid,
-          price: item.total_price,
-          quantity: item.quantity,
-        }));
+        const orderDetailsData = [];
+
+        for (const item of cartItems) {
+          const { data: discountData, error: discountError } = await supabase
+            .from("discount")
+            .select("newprice")
+            .eq("productid", item.productid)
+            .lte("start_date", new Date().toISOString())
+            .gte("end_date", new Date().toISOString())
+            .single();
+
+          let finalProdPrice;
+
+          if (discountData && !discountError) {
+            finalProdPrice = discountData.newprice;
+          } else {
+            finalProdPrice = item.product?.price;
+          }
+
+          orderDetailsData.push({
+            orderid: orderId,
+            productid: item.productid,
+            price: item.total_price,
+            quantity: item.quantity,
+            prod_price: finalProdPrice,
+          });
+        }
 
         const { error: orderDetailsError } = await supabase
           .from("orderdetails")
@@ -349,18 +370,21 @@ export default function Home() {
           return;
         }
       }
-      
+
       setSuccessModal(true);
       console.log(
         "Order placed, order details inserted, and cart cleared successfully!"
       );
 
       setTimeout(() => {
+        setIsPlacingOrder(true);
+        router.push("/orders");
         setSuccessModal(false);
-        router.push("/");
       }, 4000);
     } catch (error) {
       console.error("Unexpected error placing order:", error);
+    } finally {
+      setIsPlacingOrder(false);
     }
   };
 
@@ -508,10 +532,22 @@ export default function Home() {
         </div>
         <div className="flex justify-end my-5">
           <button
-            className="flex gap-x-2 items-center text-2xl font-semibold text-amber-50 bg-[#E19517] rounded-lg px-5 py-2 cursor-pointer mt-5"
+            className={`mt-5 bg-[#E19517] text-2xl text-white w-fit font-bold py-3 px-6 rounded-lg cursor-pointer transition duration-200 ${
+              isPlacingOrder
+                ? "opacity-50 cursor-not-allowed"
+                : "hover:bg-[#d08414]"
+            }`}
             onClick={handleSubmit}
+            disabled={isPlacingOrder}
           >
-            Place Order
+            {isPlacingOrder ? (
+              <div className="flex items-center justify-center gap-2">
+                <ClipLoader color="#fff" size={20} />
+                <span>Placing Order...</span>
+              </div>
+            ) : (
+              "Place Order"
+            )}
           </button>
         </div>
       </div>
@@ -545,9 +581,8 @@ export default function Home() {
           onImageUpload={placeOrder}
         />
       )}
-      {successModal && (
-        <SuccessModal onClose={() => setSuccessModal(false)}/>
-      )}
+      {successModal && <SuccessModal onClose={() => setSuccessModal(false)} />}
+      <ToastContainer theme="light" position="bottom-left" />
     </>
   );
 }

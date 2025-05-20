@@ -65,7 +65,7 @@ const PageHeader: React.FC<PageHeaderProps> = ({ session, setSession }) => {
     await supabase.auth.signOut();
     setSession(null);
     localStorage.clear();
-    window.location.reload();
+    router.push("/");
   };
 
   const renderAuthButtons = () => {

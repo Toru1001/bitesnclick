@@ -75,6 +75,58 @@ export default function Home() {
     setTotalPrice(totalPrice);
   };
 
+  const checkProductAvailabilityBeforeCheckout = async () => {
+    if (showtotalPrice <= 0) {
+      alert("Your cart is empty, please add items before checkout.");
+      return;
+    }
+
+    try {
+      // Get cart items with their product IDs
+      const { data: cartItems, error: cartItemsError } = await supabase
+        .from("cart_items")
+        .select("productid")
+        .eq("cartid", cartId);
+
+      if (cartItemsError) {
+        console.error(
+          "Error fetching cart items for checkout:",
+          cartItemsError
+        );
+        alert("Error verifying product availability.");
+        return;
+      }
+
+      const productIds = cartItems.map((item) => item.productid);
+
+      // Check product availability
+      const { data: products, error: productsError } = await supabase
+        .from("products")
+        .select("productid, availability")
+        .in("productid", productIds);
+
+      if (productsError) {
+        console.error("Error checking product availability:", productsError);
+        alert("Error verifying product availability.");
+        return;
+      }
+
+      const unavailableProducts = products.filter(
+        (p) => p.availability === false
+      );
+      if (unavailableProducts.length > 0) {
+        alert(
+          "Some products in your cart are currently unavailable. Please remove them before proceeding."
+        );
+        return;
+      }
+      router.push("/cart/checkout");
+    } catch (error) {
+      console.error("Unexpected error during availability check:", error);
+      alert("An unexpected error occurred.");
+    }
+  };
+
   return (
     <>
       <div className="mt-5 mx-6 md:mx-30 relative overflow-hidden">
@@ -93,30 +145,33 @@ export default function Home() {
         <div className="mt-5 h-[calc(100vh-380px)] overflow-y-auto">
           {cartItemsId && cartItemsId.length > 0 ? (
             cartItemsId.map((id) => (
-              <CartProductsCard key={id} cartitemsId={id} cartid={cartId || ""}  onTotalPriceChange={handleTotalPriceChange}/>
+              <CartProductsCard
+                key={id}
+                cartitemsId={id}
+                cartid={cartId || ""}
+                onTotalPriceChange={handleTotalPriceChange}
+              />
             ))
           ) : (
-            <span className="flex justify-center text-gray-500">No items added to cart.</span>
+            <span className="flex justify-center text-gray-500">
+              No items added to cart.
+            </span>
           )}
         </div>
         {/* footer for checkout */}
         <div className="left-0 w-full flex gap-x-5 justify-end my-5 bg-white px-6 py-5 shadow-[0px_-4px_16px_rgba(17,17,26,0.1)]">
           <div className="flex flex-col items-end">
             <span className="text-gray-950">Order Total:</span>
-            <span className="text-2xl text-[#E19517] font-semibold">₱ {showtotalPrice}.00</span>
+            <span className="text-2xl text-[#E19517] font-semibold">
+              ₱ {showtotalPrice.toFixed(2)}
+            </span>
           </div>
-            <button
+          <button
             className="border-2 border-[#E19517] bg-[#E19517] px-5 py-3 rounded-lg cursor-pointer text-amber-50 font-medium"
-            onClick={() => {
-              if (showtotalPrice > 0) {
-              router.push("/cart/checkout");
-              } else {
-              alert("There are no items inside the cart.");
-              }
-            }}
-            >
+            onClick={checkProductAvailabilityBeforeCheckout}
+          >
             Check Out
-            </button>
+          </button>
         </div>
       </div>
     </>

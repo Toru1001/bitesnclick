@@ -15,6 +15,13 @@ const CreateDiscountForm = () => {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  const [errors, setErrors] = useState({
+    selectedProduct: false,
+    discountPercent: false,
+    startDate: false,
+    endDate: false,
+  });
+
   const router = useRouter();
 
   useEffect(() => {
@@ -39,11 +46,8 @@ const CreateDiscountForm = () => {
   }, []);
 
   useEffect(() => {
-    const price = productPrice;
-    const discount = discountPercent;
-
-    if (!isNaN(price) && !isNaN(discount)) {
-      const discounted = price - price * (discount / 100);
+    if (!isNaN(productPrice) && !isNaN(discountPercent)) {
+      const discounted = productPrice - productPrice * (discountPercent / 100);
       setNewPrice(parseFloat(discounted.toFixed(2)));
     } else {
       setNewPrice(0);
@@ -63,8 +67,26 @@ const CreateDiscountForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (isNaN(discountPercent)) {
-      console.error("Invalid discount percentage");
+    const newErrors = {
+      selectedProduct: selectedProduct === "",
+      discountPercent: discountPercent <= 0 || discountPercent > 100,
+      startDate: startDate === "",
+      endDate: endDate === "",
+    };
+
+    setErrors(newErrors);
+
+    const hasError = Object.values(newErrors).some((val) => val);
+    if (hasError) {
+      alert("Please fill in all required fields correctly.");
+      return;
+    }
+
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (end < start) {
+      alert("End date cannot be before start date.");
       return;
     }
 
@@ -81,7 +103,6 @@ const CreateDiscountForm = () => {
     if (error) {
       console.error("Error creating discount:", error);
     } else {
-      console.log("Data returned:", data);
       setSuccessMessage("Discount successfully created!");
       setSelectedProduct("");
       setProductPrice(0);
@@ -89,6 +110,12 @@ const CreateDiscountForm = () => {
       setNewPrice(0);
       setStartDate("");
       setEndDate("");
+      setErrors({
+        selectedProduct: false,
+        discountPercent: false,
+        startDate: false,
+        endDate: false,
+      });
     }
   };
 
@@ -105,7 +132,7 @@ const CreateDiscountForm = () => {
               <select
                 value={selectedProduct}
                 onChange={handleProductChange}
-                className="border p-2 rounded border-gray-400"
+                className={`border p-2 rounded ${errors.selectedProduct ? "border-red-500" : "border-gray-400"}`}
               >
                 <option value="">-- Choose Product --</option>
                 {products.map((product) => (
@@ -115,30 +142,49 @@ const CreateDiscountForm = () => {
                 ))}
               </select>
             </div>
+
             <div className="flex flex-col gap-y-2">
               <label>Discount</label>
-              <div className="flex items-center">
+              <div className="flex items-center gap-2">
                 <input
-                  type="number"
+                  type="text"
+                  list="discount-options"
+                  placeholder="Discount"
                   value={discountPercent || ""}
                   onChange={(e) => {
                     const val = e.target.value;
-                    setDiscountPercent(val === "" ? 0 : Number(val));
+                    if (/^\d{0,3}$/.test(val)) {
+                      const num = parseFloat(val);
+                      setDiscountPercent(val === "" ? 0 : num);
+                    }
                   }}
-                  placeholder="Discount %"
-                  className="border p-2 rounded border-gray-400"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  className={`border p-2 rounded w-50 ${
+                    errors.discountPercent ? "border-red-500" : "border-gray-500"
+                  }`}
                 />
-
-                <span className="ml-2">%</span>
+                <datalist id="discount-options">
+                  {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((value) => (
+                    <option key={value} value={value} />
+                  ))}
+                </datalist>
+                <span>%</span>
               </div>
+              {errors.discountPercent && (
+                <span className="text-red-600 text-sm">
+                  Discount must be between 1 and 100.
+                </span>
+              )}
             </div>
+
             <div className="flex flex-col gap-y-2">
               <label>Start Date</label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => setStartDate(e.target.value)}
-                className="border p-2 rounded border-gray-400"
+                className={`border p-2 rounded ${errors.startDate ? "border-red-500" : "border-gray-400"}`}
               />
             </div>
           </div>
@@ -174,7 +220,7 @@ const CreateDiscountForm = () => {
                 type="date"
                 value={endDate}
                 onChange={(e) => setEndDate(e.target.value)}
-                className="border p-2 rounded border-gray-400"
+                className={`border p-2 rounded ${errors.endDate ? "border-red-500" : "border-gray-400"}`}
               />
             </div>
           </div>
@@ -184,11 +230,8 @@ const CreateDiscountForm = () => {
           <div className="col-span-2 flex justify-end space-x-4 mt-4">
             <button
               type="button"
-              onClick={(event) => {
-                event.preventDefault(); 
-                router.back();
-              }}
-              className="border-1 border-[#E19517]  text-[#E19517] px-4 py-2 rounded hover:bg-gray-300 cursor-pointer"
+              onClick={() => router.back()}
+              className="border-1 border-[#E19517] text-[#E19517] px-4 py-2 rounded hover:bg-gray-300 cursor-pointer"
             >
               Cancel
             </button>
@@ -196,7 +239,7 @@ const CreateDiscountForm = () => {
               type="submit"
               className="bg-[#E19517] text-white px-4 py-2 rounded hover:bg-[#E19517]/80 cursor-pointer"
             >
-              Create New Discount
+              Set Discount
             </button>
           </div>
         </div>

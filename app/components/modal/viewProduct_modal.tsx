@@ -5,7 +5,6 @@ import { Plus, Minus } from 'lucide-react';
 import { faCartPlus } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { supabase } from '@/app/lib/supabase';
-import { toast, ToastContainer } from 'react-toastify';
 
 interface ViewProductModalProps {
   onClose: () => void;
@@ -16,27 +15,53 @@ interface ViewProductModalProps {
 const ViewProductModal: React.FC<ViewProductModalProps> = ({ onClose, productId, onMessage }) => {
   const [quantity, setQuantity] = useState<number>(1);
   const [product, setProduct] = useState<any>(null);
-  const [loading, setLoading] = useState<boolean>(true)
+  const [loading, setLoading] = useState<boolean>(true);
+  const [discount, setDiscount] = useState<any>(null);
+  const [totalPrice, setTotalPrice] = useState<number>(0);
 
   useEffect(() => {
     const fetchProductDetails = async () => {
       setLoading(true);
-      const { data, error } = await supabase
+
+      const { data: productData, error: productError } = await supabase
         .from('products')
         .select('*, category(name)')
         .eq('productid', productId)
         .single();
 
-      if (error) {
-        console.error('Error fetching product details:', error);
-      } else {
-        setProduct(data);
+      if (productError) {
+        console.error('Error fetching product details:', productError);
+        setLoading(false);
+        return;
       }
+
+      setProduct(productData);
+
+      // Fetch discount if exists
+      const { data: discountData, error: discountError } = await supabase
+        .from('discount')
+        .select('*')
+        .eq('productid', productId)
+        .single();
+
+      if (discountError && discountError.code !== 'PGRST116') {
+        console.error('Error fetching discount:', discountError);
+      } else {
+        setDiscount(discountData);
+      }
+
       setLoading(false);
     };
 
     fetchProductDetails();
   }, [productId]);
+
+  const isDiscountActive = discount && product && (() => {
+    const now = new Date();
+    const startDate = new Date(discount.start_date);
+    const endDate = new Date(discount.end_date);
+    return now >= startDate && now <= endDate;
+  })();
 
   const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
@@ -45,76 +70,80 @@ const ViewProductModal: React.FC<ViewProductModalProps> = ({ onClose, productId,
   };
 
   const handleAddToCart = async () => {
-    try {
-      const {
-              data: { user },
-            } = await supabase.auth.getUser();
-      // Fetch the user's cart
-      const { data: cartData, error: cartError } = await supabase
+  try {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const { data: cartData, error: cartError } = await supabase
+      .from('cart')
+      .select('cartid')
+      .eq('customerid', user?.id)
+      .single();
+
+    if (cartError && cartError.code !== 'PGRST116') {
+      console.error('Error fetching cart:', cartError);
+      return;
+    }
+
+    let cartId = cartData?.cartid;
+
+    if (!cartId) {
+      const { data: newCart, error: newCartError } = await supabase
         .from('cart')
+        .insert({ customerid: user?.id })
         .select('cartid')
-        .eq('customerid', user?.id)
         .single();
 
-      if (cartError && cartError.code !== 'PGRST116') {
-        console.error('Error fetching cart:', cartError);
+      if (newCartError) {
+        console.error('Error creating cart:', newCartError);
         return;
       }
 
-      let cartId = cartData?.cartid;
-
-      // If no cart exists, create a new one
-      if (!cartId) {
-        const { data: newCart, error: newCartError } = await supabase
-          .from('cart')
-          .insert({ customerid: user?.id })
-          .select('cartid')
-          .single();
-
-        if (newCartError) {
-          console.error('Error creating cart:', newCartError);
-          return;
-        }
-
-        cartId = newCart.cartid;
-      }
-
-      // Insert product into cart_items
-      const totalPrice = quantity * product.price;
-      const { error: cartItemError } = await supabase.from('cart_items').insert({
-        cartid: cartId,
-        productid: product.productid,
-        quantity,
-        total_price: totalPrice,
-      });
-
-      if (cartItemError) {
-        console.error('Error adding item to cart:', cartItemError);
-      } else {
-        console.log('Item added to cart successfully');
-
-        onClose();
-      }
-    } catch (error) {
-      console.error('Unexpected error:', error);
+      cartId = newCart.cartid;
     }
-  };
+
+    const now = new Date();
+    const startDate = discount ? new Date(discount.start_date) : null;
+    const endDate = discount ? new Date(discount.end_date) : null;
+
+    const hasValidDiscount =
+      discount && startDate && endDate && now >= startDate && now <= endDate;
+
+    const finalPrice = hasValidDiscount ? discount.newprice : product.price;
+    const total_price = finalPrice * quantity;
+
+    const { error: cartItemError } = await supabase.from('cart_items').insert({
+      cartid: cartId,
+      productid: product.productid,
+      quantity,
+      total_price,
+    });
+
+    if (cartItemError) {
+      console.error('Error adding item to cart:', cartItemError);
+    } else {
+      console.log('Item added to cart successfully');
+      onClose();
+    }
+  } catch (error) {
+    console.error('Unexpected error:', error);
+  }
+};
+
 
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/50 z-40" onClick={handleOverlayClick}>
       <div className="relative bg-white rounded-2xl p-5 h-full w-full md:h-fit md:w-fit overflow-scroll md:overflow-hidden" onClick={(e) => e.stopPropagation()}>
-        <button
-          className="absolute flex cursor-pointer items-center justify-center top-4 right-4 w-10 h-10"
-          onClick={onClose}
-        >
-          <X className="text-[#240C03] font-bold" />
+        <button className="absolute top-4 right-4 w-10 h-10 cursor-pointer" onClick={onClose}>
+          <X className="text-[#240C03]" />
         </button>
         <div className="flex w-full border-b-3 pb-2 border-[#E19517]">
           <span className="font-semibold text-xl">View Product</span>
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center  w-150 h-90">
+          <div className="flex items-center justify-center w-150 h-90">
             <div className="animate-spin rounded-full h-10 w-10 border-4 border-[#E19517] border-t-transparent"></div>
           </div>
         ) : (
@@ -134,11 +163,23 @@ const ViewProductModal: React.FC<ViewProductModalProps> = ({ onClose, productId,
                 <div className="flex flex-col">
                   <span className="font-light text-gray-500">{product.category?.name}</span>
                   <span className="font-semibold text-2xl">{product.name}</span>
-                  <span className="font-bold text-2xl mt-5">
-                    <span className="font-extralight text-3xl">₱</span> {product.price}.00
-                  </span>
+                  <div className="mt-5">
+                    {isDiscountActive ? (
+                      <>
+                        <span className="font-bold text-2xl">
+                          <span className="font-extralight text-3xl">₱</span> {discount.newprice.toFixed(2)}
+                        </span>
+                        <span className="ml-2 line-through text-gray-500 text-sm">₱ {product.price}.00</span>
+                        <div className="text-sm bg-[#E19517] w-fit px-2 rounded-xs mt-1 text-amber-50 font-semibold">{discount.discount_percent}% OFF</div>
+                      </>
+                    ) : (
+                      <span className="font-bold text-2xl">
+                        <span className="font-extralight text-3xl">₱</span> {product.price}.00
+                      </span>
+                    )}
+                  </div>
                 </div>
-                <div className="pt-5 text-xs text-justify px-5 overflow-scroll line-clamp-8 [&::-webkit-scrollbar]:hidden scrollbar-thin scrollbar-none ">
+                <div className="pt-5 text-xs text-justify px-5 overflow-scroll line-clamp-8 [&::-webkit-scrollbar]:hidden scrollbar-thin scrollbar-none">
                   <span>{product.description}</span>
                 </div>
               </div>
@@ -168,7 +209,13 @@ const ViewProductModal: React.FC<ViewProductModalProps> = ({ onClose, productId,
                   </div>
                 </div>
                 <div className="flex justify-center my-5">
-                  <button className="flex gap-x-2 items-center text-xl text-amber-50 bg-[#E19517] rounded-lg px-5 py-2 cursor-pointer" onClick={() =>{handleAddToCart(); onMessage?.("Item added to cart")}}>
+                  <button
+                    className="flex gap-x-2 items-center text-xl text-amber-50 bg-[#E19517] rounded-lg px-5 py-2 cursor-pointer"
+                    onClick={() => {
+                      handleAddToCart();
+                      onMessage?.('Item added to cart');
+                    }}
+                  >
                     <span>Add to cart</span>
                     <FontAwesomeIcon icon={faCartPlus} />
                   </button>
@@ -177,7 +224,7 @@ const ViewProductModal: React.FC<ViewProductModalProps> = ({ onClose, productId,
             </div>
           </div>
         )}
-      </div>  
+      </div>
     </div>
   );
 };

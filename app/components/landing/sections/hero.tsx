@@ -1,7 +1,9 @@
 import React from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 const Hero: React.FC = () => {
+  const router = useRouter();
   return (
     <div className="flex flex-col md:flex-row items-center justify-center h-auto md:h-160 bg-[#7B5137] px-6 md:px-30 py-10 md:py-0 text-center md:text-left z-0">
       <div className="flex flex-col gap-5 md:gap-10 w-full md:w-200 items-center md:items-start">
@@ -9,11 +11,11 @@ const Hero: React.FC = () => {
           <div className="font-bold text-amber-50 text-3xl md:text-6xl">Enjoy Your Coffee</div>
           <div className="font-bold text-amber-50 text-3xl md:text-6xl">Before Your Activity</div>
         </div>
-        <div className="text-amber-50 w-full text-sm md:text-base md:w-140 px-4 md:px-0">
+        <div className="text-amber-50 w-full text-sm md:text-bases md:w-140 px-4 md:px-0">
           Boost your productivity and build your mood with a short break in the most comfortable place in Davao. Enjoy your coffee like never before.
         </div>
         <div className="flex items-center gap-4">
-          <button className="border-2 border-[#E19517] bg-[#E19517] rounded-lg py-2 px-4 cursor-pointer text-amber-50 font-medium w-fit">
+          <button onClick={() => {router.push("/products")}} className="border-2 border-[#E19517] bg-[#E19517] rounded-lg py-2 px-4 cursor-pointer text-amber-50 font-medium w-fit">
             Order Now
           </button>
           <div className="absolute w-[100px] h-[100px] right-10 block md:hidden">

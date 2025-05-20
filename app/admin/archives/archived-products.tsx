@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabase';
-import EditProductModal from '../products/edit-products';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEllipsisV } from '@fortawesome/free-solid-svg-icons';
 
@@ -135,13 +134,13 @@ const ArchivedProducts = () => {
           </tbody>
         </table>
 
-        {editingProduct && (
+        {/* {editingProduct && (
           <EditProductModal
             product={editingProduct}
             onClose={() => setEditingProduct(null)}
             onSave={fetchArchivedProducts}
           />
-        )}
+        )} */}
 
         {selectedProduct && (
           <div className="fixed inset-0 backdrop-blur-sm flex items-center justify-center z-50">

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { faCreditCard, faCartPlus, faTruckFast, faMugHot, faClipboard, faClipboardCheck} from "@fortawesome/free-solid-svg-icons";
+import { faCreditCard, faCartPlus, faTruckFast, faMugHot, faClipboard, faClipboardCheck, faXmark} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Image from "next/image";
 import { supabase } from "@/app/lib/supabase";
@@ -85,6 +85,11 @@ const OrdersCard: React.FC<OrdersCardProps> = ({ orderId }) => {
       case "Order Complete":
         return <FontAwesomeIcon
         icon={faClipboardCheck}
+        className="text-[#E19517] text-2xl"
+      />
+      case "Cancelled":
+        return <FontAwesomeIcon
+        icon={faXmark}
         className="text-[#E19517] text-2xl"
       />
       default:

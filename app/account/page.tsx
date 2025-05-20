@@ -54,6 +54,8 @@ export default function Home() {
     return <div className="text-red-500">{error}</div>;
   }
 
+  
+
   return (
     <>
       <div className="flex flex-col mx-6 md:mx-30 mb-10">

@@ -1,11 +1,6 @@
 "use client";
 import { useRouter } from "next/navigation";
-import ViewProduct from "./view-products";
-import {
-  Dialog,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import PopUpForm from "./test";
+import ProductsTable from "./products-table";
 
 export default function Products() {
   const router = useRouter();
@@ -24,20 +19,12 @@ export default function Products() {
           >
             Add Product
           </button>
-          {/* <Dialog>
-          <DialogTrigger
-            className=" border-2 border-[#E19517] text-[#E19517] hover:bg-[#E19517] hover:text-white font-semibold py-2 px-4 text-sm rounded-lg mt-5 mr-5 cursor-pointer">
-            Show
-          </DialogTrigger>
-          <PopUpForm/>
-        </Dialog> */}
         </div>
         
       </div>
       
-      <div className="p-6">
-        
-        <ViewProduct />
+      <div className="px-6 pb--6">
+        <ProductsTable />
       </div>
     </div>
   );

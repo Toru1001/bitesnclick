@@ -1,7 +1,7 @@
 "use client";
 import { useRouter } from 'next/navigation'
 import React from 'react'
-import ViewDiscounts from './view_discounts';
+import DiscountsTable from './discounts-table';
 
 const Discounts : React.FC = () => {
   const router = useRouter();
@@ -17,8 +17,9 @@ const Discounts : React.FC = () => {
               </button>
             </div>
             </div>
-            <div className="p-6">
-            <ViewDiscounts/>
+            <div className="px-6 pb-6">
+            {/* <ViewDiscounts/> */}
+            <DiscountsTable/>
             </div>
           
         </div>
