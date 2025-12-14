@@ -98,9 +98,9 @@ const Chatbot: React.FC = () => {
   );
 
   return (
-    <div className="fixed bottom-4 right-4 w-100 bg-white rounded-lg shadow-lg z-50 flex flex-col">
+    <div className={`fixed bottom-4 right-4 bg-white rounded-lg shadow-lg z-50 flex flex-col w-max`}>
       <div
-        className={`flex flex-row justify-between items-center px-4 py-2 cursor-pointer ${
+        className={`flex flex-row justify-between items-center w-full sm:w-100 gap-4 px-4 py-2 items-center cursor-pointer ${
           isOpen ? "border-b border-gray-300" : ""
         }`}
         onClick={() => setIsOpen(!isOpen)}
@@ -110,7 +110,7 @@ const Chatbot: React.FC = () => {
       </div>
 
       {isOpen && (
-        <div className="flex flex-col h-100">
+        <div className="flex flex-col w-80 sm:w-100 h-110">
           <div className="flex-1 overflow-y-auto p-3 space-y-2 bg-gray-50">
             {messages.map((msg, index) => (
               <div
