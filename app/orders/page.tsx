@@ -8,36 +8,48 @@ export default function Home() {
     const [activeTab, setActiveTab] = useState("ongoing");
 
     return (
-        <div>
-            <div className="mt-5 mx-6 md:mx-30">
-                <span className="font-bold text-2xl md:text-4xl text-[#240C03] text-end">
+        <div className="w-full overflow-x-hidden">
+            <div className="mt-5 mx-3 sm:mx-6 md:mx-30">
+                <span className="font-bold text-xl sm:text-2xl md:text-4xl text-[#240C03]">
                     Check Orders
                 </span>
-                <div className="flex gap-y-3 mt-5 w-full px-5 py-2 shadow-[0_3px_10px_rgb(0,0,0,0.2)]">
+                <div className="flex gap-x-0 sm:gap-x-1 md:gap-x-2 mt-5 w-full rounded-lg border border-gray-200 bg-white overflow-hidden">
                     <div
-                        className={`flex justify-center w-80 pb-1 cursor-pointer ${
-                            activeTab === "ongoing" ? "border-b-2 border-[#E19517]" : ""
+                        className={`flex justify-center items-center flex-1 min-w-0 py-3 cursor-pointer transition-colors ${
+                            activeTab === "ongoing" 
+                                ? "border-b-3 border-[#E19517] bg-[#E19517]/5" 
+                                : "border-b-3 border-transparent hover:bg-gray-50"
                         }`}
                         onClick={() => setActiveTab("ongoing")}
                     >
-                        <span>Ongoing Orders</span>
+                        <span className={`text-[10px] sm:text-sm md:text-base text-center px-1 sm:px-2 font-medium ${
+                            activeTab === "ongoing" ? "text-[#E19517]" : "text-gray-600"
+                        }`}>Ongoing Orders</span>
                     </div>
                     <div
-                        className={`flex justify-center w-80 pb-1 cursor-pointer ${
-                            activeTab === "completed" ? "border-b-2 border-[#E19517]" : ""
+                        className={`flex justify-center items-center flex-1 min-w-0 py-3 cursor-pointer transition-colors ${
+                            activeTab === "completed" 
+                                ? "border-b-3 border-[#E19517] bg-[#E19517]/5" 
+                                : "border-b-3 border-transparent hover:bg-gray-50"
                         }`}
                         onClick={() => setActiveTab("completed")}
                     >
-                        <span>Completed</span>
+                        <span className={`text-[10px] sm:text-sm md:text-base text-center px-1 sm:px-2 font-medium ${
+                            activeTab === "completed" ? "text-[#E19517]" : "text-gray-600"
+                        }`}>Completed</span>
                     </div>
 
                     <div
-                        className={`flex justify-center w-80 pb-1 cursor-pointer ${
-                            activeTab === "cancelled" ? "border-b-2 border-[#E19517]" : ""
+                        className={`flex justify-center items-center flex-1 min-w-0 py-3 cursor-pointer transition-colors ${
+                            activeTab === "cancelled" 
+                                ? "border-b-3 border-[#E19517] bg-[#E19517]/5" 
+                                : "border-b-3 border-transparent hover:bg-gray-50"
                         }`}
                         onClick={() => setActiveTab("cancelled")}
                     >
-                        <span>Cancelled</span>
+                        <span className={`text-[10px] sm:text-sm md:text-base text-center px-1 sm:px-2 font-medium ${
+                            activeTab === "cancelled" ? "text-[#E19517]" : "text-gray-600"
+                        }`}>Cancelled</span>
                     </div>
                 </div>
                 {/* Dynamic Pages */}
