@@ -18,7 +18,7 @@ const AdminHeader: React.FC = () => {
         <Menu as="div" className="relative inline-block text-left w-fit">
           <div>
             <Menu.Button className="relative cursor-pointer">
-              <span className="absolute right-1 w-60 bg-[#F2AA6B] pl-3 pr-9 mt-2 py-2 mr-6 rounded-xl z-0">
+              <span className="absolute right-1 w-60 bg-[#F2AA6B] pl-3 pr-9 mt-1 py-2 mr-6 rounded-xl z-0">
                 Good Day, Admin!
               </span>
               <div className="flex justify-center items-center absolute h-12 w-12 top-0 right-5 z-10 bg-gray-300 rounded-full">

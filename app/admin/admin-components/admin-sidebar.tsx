@@ -33,7 +33,7 @@ const AdminSidebar = () => {
       <AdminHeader />
       <aside className="h-screen w-64 bg-[#7B5137] text-white flex flex-col fixed top-0 z-50">
         <div className="flex justify-center border-b-1 border-amber-50">
-          <Image src="/assets/logos.png" alt="Logo" width={90} height={40} />
+          <Image src="/assets/logos.png" alt="Logo" width={160} height={80} />
         </div>
 
         <nav className="flex-1">
@@ -42,7 +42,7 @@ const AdminSidebar = () => {
               <li key={item.path} className="border-b border-amber-50">
                 <Link href={item.path}>
                   <span
-                    className={`flex pl-5 items-center gap-2 p-4 ${
+                    className={`flex pl-5 items-center gap-2.5 p-5 ${
                       pathname === item.path
                         ? "bg-[#E19517]"
                         : "hover:bg-[#E19517]/40"
