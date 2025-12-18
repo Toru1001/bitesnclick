@@ -8,12 +8,13 @@ import ProductSection from "./components/landing/sections/product";
 import OurShop from "./components/landing/sections/ourShop";
 import AboutUs from "./components/landing/sections/aboutUs";
 import Footer from "./components/landing/sections/footer";
+import Chatbot from "./components/chatbot/chatbot";
 
 export default function Home() {
   
 
   return (
-    <>
+    <div className="relative">
       <Hero />
       <Banner />
       <Section2 />
@@ -22,6 +23,7 @@ export default function Home() {
       <div id="about"><OurShop /></div>
       <AboutUs />
       <div id="footer"><Footer /></div>
-    </>
+
+    </div>
   );
 }

@@ -8,6 +8,7 @@ import { ClipLoader } from "react-spinners";
 import { usePathname, useRouter } from "next/navigation";
 import AdminSidebar from "./admin/admin-components/admin-sidebar";
 import AuthComponent from "./login/admin/page";
+import Chatbot from "./components/chatbot/chatbot";
 
 export default function SessionWrapper({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -129,7 +130,10 @@ export default function SessionWrapper({ children }: { children: React.ReactNode
       {isAdminPath ? (
         <AdminSidebar />
       ) : (
-        <PageHeader session={session} setSession={setSession} />
+        <div className="relative">
+          <PageHeader session={session} setSession={setSession} />
+          <Chatbot></Chatbot>
+        </div>
       )}
       <main>{children}</main>
     </>
