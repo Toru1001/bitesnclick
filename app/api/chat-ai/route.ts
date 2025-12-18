@@ -33,7 +33,8 @@ export async function POST(req: Request) {
     }
     const fullPrompt = `
 Answer the user's question using ONLY the context below.
-If the answer is not in the context, reply politely that you don't have that information.
+If the answer is not in the context, reply politely that you don't have that information and 
+just contact us at https://www.facebook.com/homebitesdavao or https://www.instagram.com/homebitesdavao.
 
 ==============================
 Context:
