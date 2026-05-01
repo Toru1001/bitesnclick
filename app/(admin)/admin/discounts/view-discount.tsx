@@ -8,7 +8,16 @@ interface ViewDiscountProps {
   onChange: () => void;
 }
 
-const ViewDiscount: React.FC<ViewDiscountProps> = ({ onClose, product, onChange }) => {
+const safeText = (v: any) =>
+  typeof v === "string" ? v.replace(/</g, "&lt;").replace(/>/g, "&gt;") : v;
+
+const isValidString = (v: any) => typeof v === "string" && v.trim().length > 0;
+
+const ViewDiscount: React.FC<ViewDiscountProps> = ({
+  onClose,
+  product,
+  onChange,
+}) => {
   const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
       onClose();
@@ -17,12 +26,16 @@ const ViewDiscount: React.FC<ViewDiscountProps> = ({ onClose, product, onChange 
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Invalid date";
+
     return new Intl.DateTimeFormat("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
     }).format(date);
   };
+
+  const safeImage = isValidString(product?.img) ? product.img : "";
 
   return (
     <div
@@ -39,55 +52,62 @@ const ViewDiscount: React.FC<ViewDiscountProps> = ({ onClose, product, onChange 
         >
           <X className="text-[#240C03] font-bold" />
         </button>
+
         <div className="flex w-full border-b-3 pb-2 border-[#E19517]">
           <span className="font-semibold text-xl">View Discount</span>
         </div>
 
         <div className="flex flex-col md:flex-row gap-x-10 mt-5 justify-between">
           <div className="rounded-2xl overflow-hidden">
-            <Image
-              src={product.img}
-              alt={product.name || "Product Image"}
-              width={200}
-              height={200}
-              className="w-90 h-60 md:h-100 object-cover rounded-2xl"
-            />
+            {safeImage && (
+              <Image
+                src={safeImage}
+                alt={safeText(product?.name) || "Product Image"}
+                width={200}
+                height={200}
+                className="w-90 h-60 md:h-100 object-cover rounded-2xl"
+              />
+            )}
           </div>
 
           <div className="flex flex-col mt-5 md:mt-0 w-80 justify-between items-center h-110 md:h-auto">
             <div>
               <div className="flex flex-col">
-                <span className="font-light text-gray-500">
-                  {/* {product.category} */}
-                </span>
+                <span className="font-light text-gray-500"></span>
+
                 <span className="font-semibold text-2xl w-80">
-                  {product.name}
+                  {safeText(product?.name)}
                 </span>
+
                 <div className="flex items-center gap-x-3 mt-5">
                   <span className="font-light text-gray-500 text-lg line-through">
-                    ₱ {product.price}.00
+                    ₱ {Number(product?.price || 0)}.00
                   </span>
+
                   <span className="bg-[#E19517] text-amber-50 rounded-sm px-2">
-                    {product.percent}%
+                    {Number(product?.percent || 0)}%
                   </span>
                 </div>
+
                 <span className="font-bold text-2xl">
                   <span className="font-extralight text-3xl">₱</span>{" "}
-                  {product.discountedPrice}.00
+                  {Number(product?.discountedPrice || 0)}.00
                 </span>
               </div>
+
               <div className="flex flex-col gap-2 pt-5 text-justify overflow-scroll line-clamp-8 [&::-webkit-scrollbar]:hidden scrollbar-thin scrollbar-none ">
                 <span className="text-gray-500">Start Date: </span>
                 <span className="flex justify-center font-semibold text-lg">
-                  {formatDate(product.start_date)}
+                  {formatDate(product?.start_date)}
                 </span>
+
                 <span className="text-gray-500">End Date: </span>
                 <span className="flex justify-center font-semibold text-lg">
-                  {formatDate(product.end_date)}
+                  {formatDate(product?.end_date)}
                 </span>
-                <span>{/* {product.description} */}</span>
               </div>
             </div>
+
             <div className="flex justify-center my-5">
               <button
                 className="flex gap-x-2 items-center text-lg border-1 border-[#E19517] text-amber-50 bg-[#E19517] hover:bg-amber-50 hover:text-[#E19517] rounded-lg px-5 py-2 cursor-pointer"

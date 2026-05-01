@@ -4,6 +4,10 @@ import { useState, useEffect } from "react";
 import { supabase } from '@/lib/supabase/client';
 import { useRouter } from "next/navigation";
 
+const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+const MAX_NAME_LENGTH = 100;
+const MAX_DESC_LENGTH = 1000;
+
 const NewProduct = () => {
   const [productName, setProductName] = useState("");
   const [productPrice, setProductPrice] = useState("");
@@ -16,6 +20,7 @@ const NewProduct = () => {
   const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string>("");
+
   const [fieldErrors, setFieldErrors] = useState({
     productName: false,
     productPrice: false,
@@ -23,8 +28,8 @@ const NewProduct = () => {
     categoryId: false,
     productImage: false,
   });
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const router = useRouter();
 
   useEffect(() => {
@@ -32,6 +37,7 @@ const NewProduct = () => {
       const { data, error } = await supabase
         .from("category")
         .select("categoryid, name");
+
       if (error) {
         console.error("Error fetching categories:", error.message);
       } else {
@@ -41,16 +47,26 @@ const NewProduct = () => {
 
     fetchCategories();
   }, []);
+  useEffect(() => {
+    return () => {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setLoading(true);
     setSuccessMessage("");
 
+    const trimmedName = productName.trim();
+    const trimmedDesc = productDescription.trim();
+
     const errors = {
-      productName: !productName.trim(),
+      productName: !trimmedName,
       productPrice: !productPrice.trim(),
-      productDescription: !productDescription.trim(),
+      productDescription: !trimmedDesc,
       categoryId: !categoryId,
       productImage: !productImage,
     };
@@ -62,16 +78,46 @@ const NewProduct = () => {
       setLoading(false);
       return;
     }
+    if (trimmedName.length > MAX_NAME_LENGTH) {
+      alert("Product name is too long.");
+      setLoading(false);
+      return;
+    }
+
+    if (trimmedDesc.length > MAX_DESC_LENGTH) {
+      alert("Description is too long.");
+      setLoading(false);
+      return;
+    }
+    const price = parseFloat(productPrice);
+    if (isNaN(price) || price < 0) {
+      alert("Invalid price.");
+      setLoading(false);
+      return;
+    }
 
     let imageUrl = null;
 
     if (productImage) {
+      if (!productImage.type.startsWith("image/")) {
+        alert("Only image files are allowed.");
+        setLoading(false);
+        return;
+      }
+      if (productImage.size > MAX_IMAGE_SIZE) {
+        alert("Image must be less than 2MB.");
+        setLoading(false);
+        return;
+      }
+      const safeFileName = productImage.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+
       const { data, error } = await supabase.storage
         .from("product-images")
-        .upload(`products/${Date.now()}-${productImage.name}`, productImage);
+        .upload(`products/${Date.now()}-${safeFileName}`, productImage);
 
       if (error) {
         console.error("Image upload error:", error.message);
+        alert("Image upload failed.");
         setLoading(false);
         return;
       }
@@ -83,16 +129,17 @@ const NewProduct = () => {
 
     const { error } = await supabase.from("products").insert([
       {
-        name: productName,
-        price: parseFloat(productPrice),
-        description: productDescription,
-        categoryid: categoryId,
+        name: trimmedName,
+        price: price,
+        description: trimmedDesc,
+        categoryid: Number(categoryId), // 🔒 enforce correct type
         img: imageUrl,
       },
     ]);
 
     if (error) {
       console.error("Supabase error:", error.message);
+      alert("Failed to add product.");
     } else {
       setSuccessMessage("Product added successfully!");
       setProductName("");
@@ -100,7 +147,12 @@ const NewProduct = () => {
       setProductDescription("");
       setCategoryId("");
       setProductImage(null);
+
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
       setImagePreview("");
+
       setFieldErrors({
         productName: false,
         productPrice: false,
@@ -108,6 +160,7 @@ const NewProduct = () => {
         categoryId: false,
         productImage: false,
       });
+
       router.push('/admin/products');
     }
 
@@ -115,10 +168,25 @@ const NewProduct = () => {
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setProductImage(e.target.files[0]);
-      setImagePreview(URL.createObjectURL(e.target.files[0]));
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Only image files are allowed.");
+      return;
     }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      alert("Image must be less than 2MB.");
+      return;
+    }
+
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+    }
+
+    setProductImage(file);
+    setImagePreview(URL.createObjectURL(file));
   };
 
   return (

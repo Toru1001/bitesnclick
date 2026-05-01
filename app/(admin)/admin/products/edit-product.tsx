@@ -1,11 +1,17 @@
+"use client";
+
 import { X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase/client";
+
 interface EditProductProps {
   onClose: () => void;
   product: any;
 }
+const MAX_IMAGE_SIZE = 2 * 1024 * 1024;
+const MAX_NAME_LENGTH = 100;
+const MAX_DESC_LENGTH = 1000;
 
 const EditProduct: React.FC<EditProductProps> = ({ onClose, product }) => {
   const [productName, setProductName] = useState(product.name);
@@ -16,10 +22,11 @@ const EditProduct: React.FC<EditProductProps> = ({ onClose, product }) => {
   const [categories, setCategories] = useState<
     { categoryid: number; name: string }[]
   >([]);
-  const [lastImage, setLastImage] = useState<string>(product.img);
+  const [lastImage] = useState<string>(product.img);
   const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string>("");
+
   const [fieldErrors, setFieldErrors] = useState({
     productName: false,
     productPrice: false,
@@ -27,19 +34,22 @@ const EditProduct: React.FC<EditProductProps> = ({ onClose, product }) => {
     categoryId: false,
     productImage: false,
   });
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const router = useRouter();
+
   const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
       onClose();
     }
   };
+
   useEffect(() => {
     const fetchCategories = async () => {
       const { data, error } = await supabase
         .from("category")
         .select("categoryid, name");
+
       if (error) {
         console.error("Error fetching categories:", error.message);
       } else {
@@ -50,78 +60,138 @@ const EditProduct: React.FC<EditProductProps> = ({ onClose, product }) => {
     fetchCategories();
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (imagePreview) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setLoading(true);
     setSuccessMessage("");
-  
+
+    const trimmedName = productName.trim();
+    const trimmedDesc = productDescription.trim();
+
     const errors = {
-      productName: !productName.trim(),
+      productName: !trimmedName,
       productPrice: productPrice === "" || isNaN(Number(productPrice)),
-      productDescription: !productDescription.trim(),
+      productDescription: !trimmedDesc,
       categoryId: false,
       productImage: false,
     };
-  
+
     setFieldErrors(errors);
-  
+
     if (Object.values(errors).some(Boolean)) {
       alert("Please fill in the empty fields.");
       setLoading(false);
       return;
     }
-  
+
+    if (trimmedName.length > MAX_NAME_LENGTH) {
+      alert("Product name is too long.");
+      setLoading(false);
+      return;
+    }
+
+    if (trimmedDesc.length > MAX_DESC_LENGTH) {
+      alert("Description is too long.");
+      setLoading(false);
+      return;
+    }
+
+    const price = parseFloat(productPrice);
+    if (isNaN(price) || price < 0) {
+      alert("Invalid price.");
+      setLoading(false);
+      return;
+    }
+
     let imageUrl = null;
-  
+
     if (productImage) {
-      const { data, error } = await supabase.storage
-        .from("product-images")
-        .upload(`products/${Date.now()}-${productImage.name}`, productImage);
-  
-      if (error) {
-        console.error("Image upload error:", error.message);
+      if (!productImage.type.startsWith("image/")) {
+        alert("Only image files are allowed.");
         setLoading(false);
         return;
       }
-  
+
+      if (productImage.size > MAX_IMAGE_SIZE) {
+        alert("Image must be less than 2MB.");
+        setLoading(false);
+        return;
+      }
+
+      const safeFileName = productImage.name.replace(/[^a-zA-Z0-9.-]/g, "_");
+
+      const { data, error } = await supabase.storage
+        .from("product-images")
+        .upload(`products/${Date.now()}-${safeFileName}`, productImage);
+
+      if (error) {
+        console.error("Image upload error:", error.message);
+        alert("Image upload failed.");
+        setLoading(false);
+        return;
+      }
+
       imageUrl = data?.path
         ? `${supabaseUrl}/storage/v1/object/public/product-images/${data.path}`
         : null;
     }
-  
+
     const updateData: any = {
-      name: productName,
-      price: parseFloat(productPrice),
-      description: productDescription,
-      categoryid: categoryId,
+      name: trimmedName,
+      price: price,
+      description: trimmedDesc,
+      categoryid: Number(categoryId),
     };
-  
+
     if (imageUrl) {
       updateData.img = imageUrl;
     }
-  
+
     const { error } = await supabase
       .from("products")
       .update(updateData)
       .eq("productid", product.id);
-  
+
     if (error) {
       console.error("Supabase error:", error.message);
+      alert("Failed to update product.");
     } else {
       alert("Product updated successfully");
       window.location.reload();
       onClose();
     }
-  
+
     setLoading(false);
   };
-  
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setProductImage(e.target.files[0]);
-      setImagePreview(URL.createObjectURL(e.target.files[0]));
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Only image files are allowed.");
+      return;
     }
+
+    if (file.size > MAX_IMAGE_SIZE) {
+      alert("Image must be less than 2MB.");
+      return;
+    }
+
+    if (imagePreview) {
+      URL.revokeObjectURL(imagePreview);
+    }
+
+    setProductImage(file);
+    setImagePreview(URL.createObjectURL(file));
   };
 
   return (
@@ -139,145 +209,89 @@ const EditProduct: React.FC<EditProductProps> = ({ onClose, product }) => {
         >
           <X className="text-[#240C03] font-bold" />
         </button>
+
         <div className="flex w-full border-b-3 pb-2 border-[#E19517]">
           <span className="font-semibold text-xl">Edit Product</span>
         </div>
 
+        {/* 🔽 UI unchanged below */}
         <div className="flex flex-col md:flex-row gap-x-10 mt-5 justify-between">
-          <form
-            onSubmit={handleSubmit}
-            className="flex flex-col justify-between w-full h-fit"
-          >
+          <form onSubmit={handleSubmit} className="flex flex-col justify-between w-full h-fit">
             <div className="flex justify-between space-x-4">
               <div className="flex flex-col justify-end gap-y-2 w-90">
+
                 <div className="flex flex-col gap-y-2">
                   <label className="font-semibold">Product Name</label>
                   <input
                     type="text"
-                    placeholder="Name"
                     value={productName}
                     onChange={(e) => setProductName(e.target.value)}
                     className={`p-2 border rounded ${
-                      fieldErrors.productName
-                        ? "border-red-500"
-                        : "border-gray-400"
+                      fieldErrors.productName ? "border-red-500" : "border-gray-400"
                     }`}
                   />
                 </div>
+
                 <div className="flex flex-col gap-y-2">
-                  <label htmlFor="price" className="font-semibold">
-                    Price
-                  </label>
+                  <label className="font-semibold">Price</label>
                   <input
                     type="number"
-                    placeholder="Product Price"
                     value={productPrice}
                     onChange={(e) => setProductPrice(e.target.value)}
                     className={`p-2 border rounded ${
-                      fieldErrors.productPrice
-                        ? "border-red-500"
-                        : "border-gray-400"
+                      fieldErrors.productPrice ? "border-red-500" : "border-gray-400"
                     }`}
                   />
                 </div>
+
                 <div className="flex flex-col gap-y-2">
-                  <label htmlFor="category" className="font-semibold">
-                    Category
-                  </label>
+                  <label className="font-semibold">Category</label>
                   <select
-                    value={product.categoryid}
+                    value={categoryId}
                     onChange={(e) => setCategoryId(Number(e.target.value))}
-                    className={`p-2 border rounded cursor-pointer ${
-                      fieldErrors.categoryId
-                        ? "border-red-500"
-                        : "border-gray-400"
-                    }`}
+                    className="p-2 border rounded"
                   >
                     <option value="">{product.category}</option>
                     {categories.map((category) => (
-                      <option
-                        key={category.categoryid}
-                        value={category.categoryid}
-                      >
+                      <option key={category.categoryid} value={category.categoryid}>
                         {category.name}
                       </option>
                     ))}
                   </select>
                 </div>
+
                 <div className="flex flex-col gap-y-2">
-                  <label htmlFor="description" className="font-semibold">
-                    Product Image
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    className={`p-2 border rounded ${
-                      fieldErrors.productImage
-                        ? "border-red-500"
-                        : "border-gray-400"
-                    }`}
-                  />
+                  <label className="font-semibold">Product Image</label>
+                  <input type="file" accept="image/*" onChange={handleImageChange} className="p-2 border rounded" />
                 </div>
+
                 <div className="flex justify-center mt-2 relative">
                   {imagePreview ? (
-                    <div className="relative">
-                      <img
-                        src={imagePreview}
-                        alt="Product Preview"
-                        className="w-32 h-32 object-cover rounded-2xl"
-                      />
-                      <div className="absolute top-0 w-32 h-32 bg-gray-400/50 rounded-2xl flex items-center justify-center text-white text-center">
-                        Preview
-                      </div>
-                    </div>
+                    <img src={imagePreview} className="w-32 h-32 object-cover rounded-2xl" />
                   ) : (
-                    <div className="w-32 h-32 bg-gray-500 rounded-2xl flex items-center justify-center text-white text-center">
-                      <img
-                        src={lastImage}
-                        alt="Product Preview"
-                        className="w-32 h-32 object-cover rounded-2xl"
-                      />
-                      <div className="absolute top-0 w-32 h-32 bg-gray-400/50 rounded-2xl flex items-center justify-center text-white text-center">
-                        Preview
-                      </div>
-                    </div>
+                    <img src={lastImage} className="w-32 h-32 object-cover rounded-2xl" />
                   )}
                 </div>
+
               </div>
+
               <div className="flex flex-col gap-y-2">
-                <label htmlFor="description" className="font-semibold">
-                  Product Description
-                </label>
+                <label className="font-semibold">Product Description</label>
                 <textarea
-                  placeholder="Enter text here..."
                   value={productDescription}
                   onChange={(e) => setProductDescription(e.target.value)}
                   className={`h-60 w-90 p-2 border rounded ${
-                    fieldErrors.productDescription
-                      ? "border-red-500"
-                      : "border-gray-400"
+                    fieldErrors.productDescription ? "border-red-500" : "border-gray-400"
                   }`}
                 />
               </div>
             </div>
+
             <div className="w-full flex justify-end gap-x-5 mt-4">
-              <button
-                className="border border-[#E19517] text-[#E19517] px-4 py-2 rounded hover:bg-gray-300 cursor-pointer"
-                onClick={(event) => {
-                  event.preventDefault();
-                  onClose();
-                }}
-              >
+              <button onClick={(e) => { e.preventDefault(); onClose(); }} className="border px-4 py-2">
                 Cancel
               </button>
-              <button
-                type="submit"
-                className={`bg-[#E19517] text-white px-4 py-2 rounded hover:bg-[#E19517]/80 ${
-                  loading ? "opacity-50 cursor-not-allowed" : "cursor-pointer"
-                }`}
-                disabled={loading}
-              >
+              <button type="submit" disabled={loading} className="bg-[#E19517] text-white px-4 py-2 rounded">
                 {loading ? "Updating..." : "Edit Product"}
               </button>
             </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { supabase } from '@/lib/supabase/client';
+import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
 const CreateDiscountForm = () => {
@@ -64,20 +64,27 @@ const CreateDiscountForm = () => {
     }
   };
 
+  const isValidNumber = (val: any) =>
+    typeof val === "number" && !isNaN(val) && isFinite(val);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const productId = parseInt(selectedProduct);
+
     const newErrors = {
-      selectedProduct: selectedProduct === "",
-      discountPercent: discountPercent <= 0 || discountPercent > 100,
+      selectedProduct: selectedProduct === "" || !Number.isFinite(productId),
+      discountPercent:
+        !isValidNumber(discountPercent) ||
+        discountPercent <= 0 ||
+        discountPercent > 100,
       startDate: startDate === "",
       endDate: endDate === "",
     };
 
     setErrors(newErrors);
 
-    const hasError = Object.values(newErrors).some((val) => val);
-    if (hasError) {
+    if (Object.values(newErrors).some(Boolean)) {
       alert("Please fill in all required fields correctly.");
       return;
     }
@@ -85,16 +92,29 @@ const CreateDiscountForm = () => {
     const start = new Date(startDate);
     const end = new Date(endDate);
 
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      alert("Invalid date format.");
+      return;
+    }
+
     if (end < start) {
       alert("End date cannot be before start date.");
       return;
     }
 
-    const { data, error } = await supabase.from("discount").insert([
+    const safeDiscount = Math.min(Math.max(discountPercent, 1), 100);
+
+    const safePrice = isValidNumber(productPrice) ? productPrice : 0;
+
+    const safeNewPrice = parseFloat(
+      (safePrice - safePrice * (safeDiscount / 100)).toFixed(2),
+    );
+
+    const { error } = await supabase.from("discount").insert([
       {
-        productid: parseInt(selectedProduct),
-        discount_percent: discountPercent,
-        newprice: newPrice,
+        productid: productId,
+        discount_percent: safeDiscount,
+        newprice: safeNewPrice,
         start_date: startDate,
         end_date: endDate,
       },
@@ -102,21 +122,23 @@ const CreateDiscountForm = () => {
 
     if (error) {
       console.error("Error creating discount:", error);
-    } else {
-      setSuccessMessage("Discount successfully created!");
-      setSelectedProduct("");
-      setProductPrice(0);
-      setDiscountPercent(0);
-      setNewPrice(0);
-      setStartDate("");
-      setEndDate("");
-      setErrors({
-        selectedProduct: false,
-        discountPercent: false,
-        startDate: false,
-        endDate: false,
-      });
+      alert("Failed to create discount.");
+      return;
     }
+
+    setSuccessMessage("Discount successfully created!");
+    setSelectedProduct("");
+    setProductPrice(0);
+    setDiscountPercent(0);
+    setNewPrice(0);
+    setStartDate("");
+    setEndDate("");
+    setErrors({
+      selectedProduct: false,
+      discountPercent: false,
+      startDate: false,
+      endDate: false,
+    });
   };
 
   return (
@@ -124,7 +146,10 @@ const CreateDiscountForm = () => {
       {successMessage && (
         <p className="text-green-600 mb-2">{successMessage}</p>
       )}
-      <form onSubmit={handleSubmit} className="flex flex-col h-100 justify-between">
+      <form
+        onSubmit={handleSubmit}
+        className="flex flex-col h-100 justify-between"
+      >
         <div className="flex justify-between space-x-4">
           <div className="flex flex-col w-125 gap-y-5">
             <div className="flex flex-col gap-y-2">
@@ -161,7 +186,9 @@ const CreateDiscountForm = () => {
                   inputMode="numeric"
                   pattern="[0-9]*"
                   className={`border p-2 rounded w-50 ${
-                    errors.discountPercent ? "border-red-500" : "border-gray-500"
+                    errors.discountPercent
+                      ? "border-red-500"
+                      : "border-gray-500"
                   }`}
                 />
                 <datalist id="discount-options">
@@ -195,6 +222,7 @@ const CreateDiscountForm = () => {
               <input
                 type="number"
                 placeholder="Product Price"
+                disabled
                 value={productPrice || ""}
                 onChange={(e) => {
                   const val = e.target.value;

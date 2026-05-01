@@ -10,7 +10,7 @@ const AdminHeader: React.FC = () => {
     const [editAdminModalOpen, setEditAdminModalOpen] = React.useState(false);
 
     const handleLogout = async () => {
-        localStorage.removeItem("admin_id"); // Kept for backwards compatibility if needed
+        localStorage.removeItem("admin_id");
         await logoutAdmin();
         router.replace("/login/admin");
     };

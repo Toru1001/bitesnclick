@@ -9,7 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { supabase } from "@/lib/supabase/client";
-import { useParams, useRouter } from "next/navigation";
+import { useParams} from "next/navigation";
 
 interface OrderTableProps{
     onData: (data: number) => void;
@@ -56,7 +56,7 @@ const OrderTable: React.FC<OrderTableProps> = ({ onData }) => {
 
   return (
     <div className="p-4">
-      <div className="h-fit my-5 shadow-[0px_4px_16px_rgba(17,17,26,0.1),_0px_8px_24px_rgba(17,17,26,0.1),_0px_16px_56px_rgba(17,17,26,0.1)]">
+      <div className="h-fit rounded-md my-5 shadow-[0px_4px_16px_rgba(17,17,26,0.1),_0px_8px_24px_rgba(17,17,26,0.1),_0px_16px_56px_rgba(17,17,26,0.1)]">
       <Table>
         <TableHeader>
           <TableRow>

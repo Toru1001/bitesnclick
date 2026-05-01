@@ -17,8 +17,23 @@ interface EditProductProps {
   product: Product;
 }
 
+const isValidNumber = (value: any) =>
+  typeof value === "number" && Number.isFinite(value);
+
+const sanitizePercent = (value: number) => {
+  if (!isValidNumber(value)) return 0;
+  if (value < 0) return 0;
+  if (value > 100) return 100;
+  return value;
+};
+
+const isValidDateRange = (start: string, end: string) => {
+  if (!start || !end) return true;
+  return new Date(end) >= new Date(start);
+};
+
 const EditDiscountModal: React.FC<EditProductProps> = ({ onClose, product }) => {
-  const [productPrice, setProductPrice] = useState<number>(product.price);
+  const [productPrice] = useState<number>(product.price);
   const [discountPercent, setDiscountPercent] = useState<number>(product.percent);
   const [newPrice, setNewPrice] = useState<number>(product.discountedPrice);
   const [startDate, setStartDate] = useState<string>(product.start_date);
@@ -32,41 +47,47 @@ const EditDiscountModal: React.FC<EditProductProps> = ({ onClose, product }) => 
   };
 
   useEffect(() => {
-    if (!isNaN(productPrice) && !isNaN(discountPercent)) {
-      const discounted = productPrice - productPrice * (discountPercent / 100);
-      setNewPrice(parseFloat(discounted.toFixed(2)));
-    } else {
-      setNewPrice(0);
-    }
+    const safePercent = sanitizePercent(discountPercent);
+    const safePrice = isValidNumber(productPrice) ? productPrice : 0;
+
+    const discounted = safePrice - safePrice * (safePercent / 100);
+    setNewPrice(Number(discounted.toFixed(2)));
   }, [productPrice, discountPercent]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    const safePercent = sanitizePercent(discountPercent);
+
     const newErrors: typeof errors = {};
 
-    if (discountPercent < 1 || discountPercent > 100) {
+    if (safePercent < 1 || safePercent > 100) {
       newErrors.discountPercent = "Discount must be between 1 and 100.";
+    }
+
+    if (!isValidDateRange(startDate, endDate)) {
+      newErrors.discountPercent = "Invalid date range.";
     }
 
     setErrors(newErrors);
     if (Object.keys(newErrors).length > 0) return;
 
+    const computedPrice =
+      productPrice - productPrice * (safePercent / 100);
+
     const { data, error } = await supabase
       .from("discount")
-      .update([
-        {
-          discount_percent: discountPercent,
-          newprice: newPrice,
-          start_date: startDate,
-          end_date: endDate,
-        },
-      ])
-      .eq("discountid", product.discountid);
+      .update({
+        discount_percent: safePercent,
+        newprice: Number(computedPrice.toFixed(2)),
+        start_date: startDate,
+        end_date: endDate,
+      })
+      .eq("discountid", Number(product.discountid));
 
     if (error) {
       console.error("Error updating discount:", error);
     } else {
-      console.log("Data returned:", data);
       alert("Discount updated successfully!");
       onClose();
       window.location.reload();
@@ -88,6 +109,7 @@ const EditDiscountModal: React.FC<EditProductProps> = ({ onClose, product }) => 
         >
           <X className="text-[#240C03]" />
         </button>
+
         <div className="flex w-full border-b-3 pb-2 border-[#E19517]">
           <span className="font-semibold text-xl">Edit Discount</span>
         </div>
@@ -111,13 +133,11 @@ const EditDiscountModal: React.FC<EditProductProps> = ({ onClose, product }) => 
                   <div className="flex items-center gap-2">
                     <input
                       type="text"
-                      list="discount-options"
                       value={discountPercent || ""}
                       onChange={(e) => {
                         const val = e.target.value;
                         if (/^\d{0,3}$/.test(val)) {
-                          const num = parseFloat(val);
-                          setDiscountPercent(val === "" ? 0 : num);
+                          setDiscountPercent(val === "" ? 0 : Number(val));
                         }
                       }}
                       inputMode="numeric"
@@ -126,15 +146,12 @@ const EditDiscountModal: React.FC<EditProductProps> = ({ onClose, product }) => 
                         errors.discountPercent ? "border-red-500" : "border-gray-500"
                       }`}
                     />
-                    <datalist id="discount-options">
-                      {[10, 20, 30, 40, 50, 60, 70, 80, 90, 100].map((value) => (
-                        <option key={value} value={value} />
-                      ))}
-                    </datalist>
                     <span>%</span>
                   </div>
                   {errors.discountPercent && (
-                    <span className="text-red-600 text-sm">{errors.discountPercent}</span>
+                    <span className="text-red-600 text-sm">
+                      {errors.discountPercent}
+                    </span>
                   )}
                 </div>
 
@@ -164,7 +181,7 @@ const EditDiscountModal: React.FC<EditProductProps> = ({ onClose, product }) => 
                   <label>Discounted Price</label>
                   <input
                     type="text"
-                    value={`₱ ${!isNaN(newPrice) ? newPrice.toFixed(2) : "0.00"}`}
+                    value={`₱ ${newPrice.toFixed(2)}`}
                     disabled
                     className="border p-2 rounded bg-gray-100 border-gray-400"
                   />

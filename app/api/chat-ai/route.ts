@@ -13,15 +13,12 @@ const MODEL_NAME = "@cf/mistralai/mistral-small-3.1-24b-instruct";
 
 let cachedContext = "";
 
-// Simple in-memory rate limiting map (IP -> timestamp array)
-// Note: In a real production distributed environment (e.g., Vercel), use Redis (Upstash).
 const rateLimitMap = new Map<string, number[]>();
-const RATE_LIMIT_WINDOW_MS = 60000; // 1 minute
+const RATE_LIMIT_WINDOW_MS = 60000;
 const RATE_LIMIT_MAX_REQUESTS = 5;
 
 export async function POST(req: Request) {
     try {
-        // 1. Rate Limiting Check
         const ip = req.headers.get("x-forwarded-for") ?? "unknown";
         const now = Date.now();
 
@@ -56,14 +53,16 @@ export async function POST(req: Request) {
         const previousMessages = messages.slice(0, -1).map(formatMessage);
         const question = messages[messages.length - 1].text;
 
-        // 2. Load context only once and cache it in memory
+        // 2. Cache PDF context
         if (!cachedContext) {
             try {
                 const { PDFLoader } =
                     await import("@langchain/community/document_loaders/fs/pdf");
+
                 const loader = new PDFLoader(
                     `${process.cwd()}/knowledge-base/For-AI-Training.pdf`,
                 );
+
                 const docs = await loader.load();
                 cachedContext = docs.map((doc) => doc.pageContent).join("\n");
             } catch (err) {
@@ -73,9 +72,12 @@ export async function POST(req: Request) {
         }
 
         const fullPrompt = `
+You are a lively and helpful assistant.
+
 Answer the user's question using ONLY the context below.
-If the answer is not in the context, reply politely that you don't have that information and 
-just contact us at https://www.facebook.com/homebitesdavao or https://www.instagram.com/homebitesdavao.
+If the answer is not in the context, say you don't have that information and refer them to:
+https://www.facebook.com/homebitesdavao
+https://www.instagram.com/homebitesdavao
 
 ==============================
 Context:
@@ -93,31 +95,45 @@ Assistant:
             Authorization: `Bearer ${process.env.CLOUDFLARE_AI_KEY}`,
             "Content-Type": "application/json",
         };
+
         let responseText = "No response from AI.";
         const MAX_RETRIES = 3;
 
         for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
-            const res = await fetch(API_BASE_URL + MODEL_NAME, {
-                method: "POST",
-                headers: HEADERS,
-                body: JSON.stringify({
-                    model: MODEL_NAME,
-                    messages: [{ role: "user", content: fullPrompt }],
-                }),
-            });
+            try {
+                const res = await fetch(API_BASE_URL + MODEL_NAME, {
+                    method: "POST",
+                    headers: HEADERS,
+                    body: JSON.stringify({
+                        prompt: fullPrompt,
+                    }),
+                });
 
-            const data = await res.json();
+                const data = await res.json();
 
-            if (!res.ok) {
-                console.error("Cloudflare AI error:", data);
-                throw new Error(`Cloudflare AI request failed: ${res.status}`);
-            }
+                if (!res.ok) {
+                    console.error("Cloudflare AI error:", data);
 
-            const text = data.result?.response ?? "";
+                    if (res.status === 404) {
+                        throw new Error(
+                            "Model not available via REST API. Switch model or use Workers.",
+                        );
+                    }
 
-            if (text && !text.startsWith("I cannot")) {
-                responseText = text;
-                break;
+                    throw new Error(`Cloudflare AI request failed: ${res.status}`);
+                }
+
+                const text =
+                    data?.result?.response ||
+                    data?.result?.output_text ||
+                    "";
+
+                if (text && !text.startsWith("I cannot")) {
+                    responseText = text;
+                    break;
+                }
+            } catch (err) {
+                if (attempt === MAX_RETRIES - 1) throw err;
             }
         }
 
