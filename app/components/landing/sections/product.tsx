@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import ProductCard from "../../model/product-card";
-import { supabase } from "@/app/lib/supabase";
+import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import ViewProductModal from "../../modal/viewProduct_modal";
 import { toast, ToastContainer } from "react-toastify";
