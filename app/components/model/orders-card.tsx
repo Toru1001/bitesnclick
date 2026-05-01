@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { faCreditCard, faCartPlus, faTruckFast, faMugHot, faClipboard, faClipboardCheck, faXmark} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Image from "next/image";
-import { supabase } from "@/app/lib/supabase";
+import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { RefreshCcwDot } from "lucide-react";
 

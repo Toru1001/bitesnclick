@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { Plus, Minus } from 'lucide-react';
 import { faCartPlus } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { supabase } from '@/app/lib/supabase';
+import { supabase } from '@/lib/supabase/client';
 
 interface ViewProductModalProps {
   onClose: () => void;

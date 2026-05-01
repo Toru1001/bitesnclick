@@ -1,6 +1,6 @@
 import { X } from 'lucide-react';
 import React, { useState } from 'react';
-import { supabase } from '@/app/lib/supabase';
+import { supabase } from '@/lib/supabase/client';
 import ConfirmationModal from '../confirmation_modal';
 
 interface PaymentModalProps {
