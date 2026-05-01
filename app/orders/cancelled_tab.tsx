@@ -36,7 +36,7 @@ const CancelledTab: React.FC = () => {
 
   return (
     <div className='flex flex-col mt-5 mb-5 w-full'>
-      <div className=''>
+      <div className='flex flex-col gap-y-5'>
         {loading ? (
           <div className="flex justify-center items-center h-screen">
           <ClipLoader color="#E19517" size={50} />
