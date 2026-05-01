@@ -2,7 +2,7 @@
     import React, { useState, useEffect } from "react";
     import Image from "next/image";
     import { Plus, Minus } from "lucide-react";
-    import { supabase } from "@/app/lib/supabase";
+    import { supabase } from "@/lib/supabase/client";
     import ConfirmationModal from "../modal/confirmation_modal";
 
     interface CartProductsCardProps {

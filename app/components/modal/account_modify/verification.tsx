@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
-import { supabase } from '@/app/lib/supabase';
+import { supabase } from '@/lib/supabase/client';
 
 interface VerificationModalProps {
   email: string;
