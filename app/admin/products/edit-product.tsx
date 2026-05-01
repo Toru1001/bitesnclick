@@ -27,6 +27,7 @@ const EditProduct: React.FC<EditProductProps> = ({ onClose, product }) => {
     categoryId: false,
     productImage: false,
   });
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 
   const router = useRouter();
   const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -84,7 +85,7 @@ const EditProduct: React.FC<EditProductProps> = ({ onClose, product }) => {
       }
   
       imageUrl = data?.path
-        ? `https://imdktcworfdyqonfdoev.supabase.co/storage/v1/object/public/product-images/${data.path}`
+        ? `${supabaseUrl}/storage/v1/object/public/product-images/${data.path}`
         : null;
     }
   
