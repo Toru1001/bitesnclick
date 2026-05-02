@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
 
-type VerifyRequestBody = {
+interface VerifyRequestBody {
   token?: string;
-};
+}
 
-type HCaptchaVerifyResponse = {
+interface HCaptchaVerifyResponse {
   success?: boolean;
   "error-codes"?: string[];
   hostname?: string;
   challenge_ts?: string;
   credit?: boolean;
   score?: number;
-};
+}
 
 function getRemoteIp(req: Request): string | undefined {
   const forwardedFor = req.headers.get("x-forwarded-for");

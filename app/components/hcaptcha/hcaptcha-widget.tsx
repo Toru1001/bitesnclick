@@ -8,18 +8,17 @@ import React, {
   useRef,
 } from "react";
 
-export type HCaptchaWidgetHandle = {
+export interface HCaptchaWidgetHandle {
   reset: () => void;
-};
+}
 
-type HCaptchaWidgetProps = {
-  onTokenChange: (token: string | null) => void;
+interface HCaptchaWidgetProps {
+  onTokenChange: (_token: string | null) => void;
   className?: string;
   theme?: "light" | "dark";
   size?: "normal" | "compact";
   siteKey?: string;
-  hasError?: boolean;
-};
+}
 
 const HCaptchaWidget = forwardRef<HCaptchaWidgetHandle, HCaptchaWidgetProps>(
   (
@@ -29,7 +28,6 @@ const HCaptchaWidget = forwardRef<HCaptchaWidgetHandle, HCaptchaWidgetProps>(
       theme = "light",
       size = "normal",
       siteKey,
-      hasError = false,
     },
     ref
   ) => {
@@ -59,9 +57,15 @@ const HCaptchaWidget = forwardRef<HCaptchaWidgetHandle, HCaptchaWidgetProps>(
           sitekey={resolvedSiteKey}
           theme={theme}
           size={size}
-          onVerify={(token) => onTokenChange(token)}
-          onExpire={() => onTokenChange(null)}
-          onError={() => onTokenChange(null)}
+          onVerify={(token) => {
+            onTokenChange(token);
+          }}
+          onExpire={() => {
+            onTokenChange(null);
+          }}
+          onError={() => {
+            onTokenChange(null);
+          }}
         />
       </div>
     );
