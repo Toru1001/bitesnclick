@@ -24,6 +24,8 @@ const LoginModal: React.FC<LoginModalProps> = ({
   const [state, setState] = useState<string>("login");
   const [forgotEmail, setForgotEmail] = useState<string>("");
   const [forgotMessage, setForgotMessage] = useState<string | null>(null);
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [failCount, setFailCount] = useState<number>(0);
 
   const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
@@ -39,14 +41,51 @@ const LoginModal: React.FC<LoginModalProps> = ({
 
     setError(null);
 
-    const { data: signInData, error: signInError } =
-      await supabase.auth.signInWithPassword({
-        email,
-        password,
+    if (cooldownUntil && Date.now() < cooldownUntil) {
+      const seconds = Math.max(1, Math.ceil((cooldownUntil - Date.now()) / 1000));
+      setError(`Too many attempts. Try again in ${seconds}s.`);
+      return;
+    }
+
+    // Server-side rate limit gate (best-effort). Note: this mainly protects abuse via the UI.
+    try {
+      const guardRes = await fetch('/api/auth/login-guard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, action: 'check' }),
       });
 
+      if (guardRes.status === 429) {
+        const data = await guardRes.json().catch(() => null);
+        const retryAfterSeconds = data?.retryAfterSeconds ?? Number(guardRes.headers.get('Retry-After')) ?? 60;
+        setCooldownUntil(Date.now() + retryAfterSeconds * 1000);
+        setError(`Too many attempts. Try again in ${retryAfterSeconds}s.`);
+        return;
+      }
+    } catch {
+      // If guard fails, don't block login (avoid locking out users due to transient server issues)
+    }
+
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
     if (signInError) {
-      setError("Invalid credentials. Please try again.");
+      setError('Invalid credentials. Please try again.');
+
+      const nextFailCount = failCount + 1;
+      setFailCount(nextFailCount);
+      // Exponential backoff (client-side)
+      const backoffSeconds = Math.min(30, Math.pow(2, Math.min(5, nextFailCount)));
+      setCooldownUntil(Date.now() + backoffSeconds * 1000);
+
+      // Record failure in server-side guard
+      fetch('/api/auth/login-guard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, action: 'fail' }),
+      }).catch(() => {});
       return;
     }
 
@@ -56,7 +95,27 @@ const LoginModal: React.FC<LoginModalProps> = ({
       return;
     }
 
-    onClose();
+    const { session } = sessionData;
+    const accessToken = session?.access_token;
+
+    if (!accessToken) {
+      setError('No access token found.');
+      return;
+    }
+
+    // Restore previous client session persistence behavior
+    localStorage.setItem('user_id', session.user.id);
+    localStorage.setItem('access_token', accessToken);
+
+    // Successful login: clear local cooldown and reset server-side counter
+    setFailCount(0);
+    setCooldownUntil(null);
+    fetch('/api/auth/login-guard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, action: 'success' }),
+    }).catch(() => {});
+    onClose(); 
   };
 
   const handleForgotPassword = async (
@@ -66,17 +125,23 @@ const LoginModal: React.FC<LoginModalProps> = ({
     setForgotMessage(null);
     setError(null);
 
-    const { error: forgotError } = await supabase.auth.resetPasswordForEmail(
-      forgotEmail,
-      {
-        redirectTo: "http://localhost:3000/auth/callback#reset-password",
-      },
-    );
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail }),
+      });
 
-    if (forgotError) {
-      setError("Failed to send reset email. Please try again.");
-    } else {
-      setForgotMessage("Password reset email sent! Please check your inbox.");
+      if (res.status === 429) {
+        const data = await res.json().catch(() => null);
+        const retryAfterSeconds = data?.retryAfterSeconds ?? Number(res.headers.get('Retry-After')) ?? 60;
+        setError(`Too many reset requests. Try again in ${retryAfterSeconds}s.`);
+        return;
+      }
+
+      setForgotMessage('Password reset email sent! Please check your inbox.');
+    } catch {
+      setError('Failed to send reset email. Please try again.');
     }
   };
 
