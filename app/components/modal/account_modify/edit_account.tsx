@@ -193,7 +193,7 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
         setLoading(false);
         return;
       }
-  
+
       const response = await fetch('/lib/delete-account', {
         method: 'POST',
         headers: {
