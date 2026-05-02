@@ -1,9 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { X, Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/app/lib/supabase";
 import VerificationModal from "./verification";
+import HCaptchaWidget, {
+  type HCaptchaWidgetHandle,
+} from "@/app/components/hcaptcha/hcaptcha-widget";
 
 interface SignUpModalProps {
   onClose: () => void;
@@ -21,6 +24,9 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [invalidFields, setInvalidFields] = useState<string[]>([]);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const captchaRef = useRef<HCaptchaWidgetHandle>(null);
 
   const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
@@ -107,45 +113,61 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
       return;
     }
 
-    const { data: signUpData, error: signUpError } = await supabase.auth.signUp(
-      {
-        email,
-        password,
-        options: {
-          data: { display_name },
-        },
+    if (!captchaToken) {
+      setError("Please complete the captcha.");
+      setInvalidFields(["captcha"]);
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const { data: signUpData, error: signUpError } =
+        await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            captchaToken,
+            data: { display_name },
+          },
+        });
+
+      if (signUpError) {
+        setError(signUpError.message);
+        captchaRef.current?.reset();
+        setCaptchaToken(null);
+        return;
       }
-    );
 
-    if (signUpError) {
-      setError(signUpError.message);
-      return;
+      const userId = signUpData.user?.id;
+
+      const { error: insertError } = await supabase.from("customers").insert([
+        {
+          customerid: userId,
+          first_name: firstName,
+          last_name: lastName,
+          email,
+          mobile_num: mobileNumber,
+          street_address: streetAddress,
+          city,
+          barangay,
+          zipcode: zipCode,
+        },
+      ]);
+
+      if (insertError) {
+        setError(insertError.message);
+        captchaRef.current?.reset();
+        setCaptchaToken(null);
+        return;
+      }
+
+      setVerificationModalOpen(true);
+      setEmail(email);
+      setPassword(password);
+    } finally {
+      setIsSubmitting(false);
     }
-
-    const userId = signUpData.user?.id;
-
-    const { error: insertError } = await supabase.from("customers").insert([
-      {
-        customerid: userId,
-        first_name: firstName,
-        last_name: lastName,
-        email,
-        mobile_num: mobileNumber,
-        street_address: streetAddress,
-        city,
-        barangay,
-        zipcode: zipCode,
-      },
-    ]);
-
-    if (insertError) {
-      setError(insertError.message);
-      return;
-    }
-
-    setVerificationModalOpen(true);
-    setEmail(email);
-    setPassword(password);
   };
 
   return (
@@ -384,11 +406,31 @@ const SignUpModal: React.FC<SignUpModalProps> = ({
                 .
               </span>
             </div>
+
+            <div
+              className={
+                invalidFields.includes("captcha") ? "rounded-md ring-2 ring-red-500" : ""
+              }
+            >
+              <HCaptchaWidget
+                ref={captchaRef}
+                onTokenChange={(token) => {
+                  setCaptchaToken(token);
+                  if (token && invalidFields.includes("captcha")) {
+                    setInvalidFields((prev) =>
+                      prev.filter((f) => f !== "captcha")
+                    );
+                  }
+                }}
+              />
+            </div>
+
             <button
               type="submit"
+              disabled={isSubmitting}
               className="w-full px-4 py-2 text-white bg-[#E19517] rounded-md hover:bg-[#E19517]/90 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400"
             >
-              Sign Up
+              {isSubmitting ? "Signing Up..." : "Sign Up"}
             </button>
             <p className="text-sm text-center text-gray-600 mb-10 md:mb-0">
               Already have an account?{" "}
