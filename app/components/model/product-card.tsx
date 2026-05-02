@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Image from "next/image";
 import { ShoppingCart } from "lucide-react";
-import { supabase } from "@/app/lib/supabase";
+import { supabase } from "@/lib/supabase/client";
 import ClipLoader from "react-spinners/ClipLoader";
 
 type ProductCardProps = {

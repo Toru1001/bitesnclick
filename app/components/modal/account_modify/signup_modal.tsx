@@ -2,7 +2,7 @@
 
 import React, { useRef, useState } from "react";
 import { X, Eye, EyeOff } from "lucide-react";
-import { supabase } from "@/app/lib/supabase";
+import { supabase } from "@/lib/supabase/client";
 import VerificationModal from "./verification";
 import HCaptchaWidget, {
   type HCaptchaWidgetHandle,

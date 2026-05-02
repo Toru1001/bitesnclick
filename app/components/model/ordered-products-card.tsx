@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
-import { supabase } from "@/app/lib/supabase";
+import { supabase } from "@/lib/supabase/client";
 
 interface OrderedProductsCardProps {
   cartitemsId: string;

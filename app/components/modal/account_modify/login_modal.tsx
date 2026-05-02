@@ -1,25 +1,28 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import Image from 'next/image';
-import { X } from 'lucide-react';
-import { supabase } from '@/app/lib/supabase';
+import React, { useState } from "react";
+import Image from "next/image";
+import { X } from "lucide-react";
+import { supabase } from "@/lib/supabase/client";
 
 interface LoginModalProps {
   onClose: () => void;
   onSwitchToSignUp: () => void;
 }
 
-const animationBase =
-  'transition-all duration-500 ease-in-out transform';
-const animationHidden = 'opacity-0 translate-x-10 pointer-events-none absolute top-0 left-0 w-full';
-const animationVisible = 'opacity-100 translate-x-0 relative';
+const animationBase = "transition-all duration-500 ease-in-out transform";
+const animationHidden =
+  "opacity-0 translate-x-10 pointer-events-none absolute top-0 left-0 w-full";
+const animationVisible = "opacity-100 translate-x-0 relative";
 
-const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSwitchToSignUp }) => {
+const LoginModal: React.FC<LoginModalProps> = ({
+  onClose,
+  onSwitchToSignUp,
+}) => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [state, setState] = useState<string>("login");
-  const [forgotEmail, setForgotEmail] = useState<string>('');
+  const [forgotEmail, setForgotEmail] = useState<string>("");
   const [forgotMessage, setForgotMessage] = useState<string | null>(null);
   const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
   const [failCount, setFailCount] = useState<number>(0);
@@ -36,7 +39,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSwitchToSignUp }) =>
     const email = form.email.value;
     const password = form.password.value;
 
-    setError(null); 
+    setError(null);
 
     if (cooldownUntil && Date.now() < cooldownUntil) {
       const seconds = Math.max(1, Math.ceil((cooldownUntil - Date.now()) / 1000));
@@ -86,9 +89,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSwitchToSignUp }) =>
       return;
     }
 
-    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-    if (sessionError || !sessionData?.session) {
-      setError('Failed to retrieve session data.');
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData?.user) {
+      setError("Failed to retrieve user data.");
       return;
     }
 
@@ -115,7 +118,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSwitchToSignUp }) =>
     onClose(); 
   };
 
-  const handleForgotPassword = async (event: React.FormEvent<HTMLFormElement>) => {
+  const handleForgotPassword = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
     event.preventDefault();
     setForgotMessage(null);
     setError(null);
@@ -139,7 +144,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSwitchToSignUp }) =>
       setError('Failed to send reset email. Please try again.');
     }
   };
-
 
   return (
     <div
@@ -173,16 +177,18 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSwitchToSignUp }) =>
             }`}
             aria-hidden={state !== "login"}
           >
-            <h2 className="font-bold text-3xl text-[#240C03]">
-              Welcome Back!
-            </h2>
+            <h2 className="font-bold text-3xl text-[#240C03]">Welcome Back!</h2>
             <p className="font-light py-2 text-sm text-[#240C03] border-b-2 border-[#E19517]">
-              We are thrilled to have you back. Login into your account by inputting your email and password.
+              We are thrilled to have you back. Login into your account by
+              inputting your email and password.
             </p>
             <form onSubmit={handleLogin} className="space-y-4 mt-10 w-full">
               {error && <p className="text-red-500">{error}</p>}
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-[#240C03]">
+                <label
+                  htmlFor="email"
+                  className="block text-sm font-medium text-[#240C03]"
+                >
                   Email Address
                 </label>
                 <input
@@ -195,7 +201,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSwitchToSignUp }) =>
               </div>
               <div className="mb-10">
                 <div className="flex justify-between">
-                  <label htmlFor="password" className="block text-sm font-medium text-[#240C03]">
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-medium text-[#240C03]"
+                  >
                     Password
                   </label>
                   <button
@@ -207,7 +216,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSwitchToSignUp }) =>
                   </button>
                 </div>
                 <input
-                  type={showPassword ? 'text' : 'password'}
+                  type={showPassword ? "text" : "password"}
                   id="password"
                   name="password"
                   required
@@ -221,7 +230,10 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSwitchToSignUp }) =>
                     onChange={() => setShowPassword(!showPassword)}
                     className="mr-2 accent-[#E19517] scale-120"
                   />
-                  <label htmlFor="showPassword" className="text-sm text-[#240C03]">
+                  <label
+                    htmlFor="showPassword"
+                    className="text-sm text-[#240C03]"
+                  >
                     Show Password
                   </label>
                 </div>
@@ -233,7 +245,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSwitchToSignUp }) =>
                 Login
               </button>
               <p className="text-sm text-center text-gray-600">
-                Don't have an account?{' '}
+                Don't have an account?{" "}
                 <a
                   onClick={onSwitchToSignUp}
                   className="text-[#E19517] hover:underline cursor-pointer"
@@ -254,19 +266,26 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSwitchToSignUp }) =>
               Forgot Password
             </h2>
             <p className="font-light py-2 text-sm text-[#240C03] border-b-2 border-[#E19517]">
-              Enter your email address and we'll send you a link to reset your password.
+              Enter your email address and we'll send you a link to reset your
+              password.
             </p>
             <form onSubmit={handleForgotPassword} className="space-y-4 w-full">
               {forgotMessage || error ? (
-                <p className={`${forgotMessage
-                  ? 'text-[#E19517]'
-                  : 'text-red-500'
-                } h-5 mt-3 mb-5 text-sm`}>{forgotMessage ? forgotMessage : error}</p>
+                <p
+                  className={`${
+                    forgotMessage ? "text-[#E19517]" : "text-red-500"
+                  } h-5 mt-3 mb-5 text-sm`}
+                >
+                  {forgotMessage ? forgotMessage : error}
+                </p>
               ) : (
                 <div className="text-white h-10">.</div>
               )}
               <div>
-                <label htmlFor="forgotEmail" className="block text-sm font-medium text-[#240C03]">
+                <label
+                  htmlFor="forgotEmail"
+                  className="block text-sm font-medium text-[#240C03]"
+                >
                   Email Address
                 </label>
                 <input
@@ -292,7 +311,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onSwitchToSignUp }) =>
               >
                 Back to Login
               </button>
-              
             </form>
           </div>
         </div>

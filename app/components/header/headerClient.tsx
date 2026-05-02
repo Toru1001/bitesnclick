@@ -1,0 +1,321 @@
+"use client";
+
+import Link from "next/link";
+import React, { startTransition, useEffect } from "react";
+import Image from "next/image";
+import {
+  MenuIcon,
+  X,
+  ShoppingCart,
+  Truck,
+  CircleUserRoundIcon,
+} from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import LoginModal from "../modal/account_modify/login_modal";
+import SignUpModal from "../modal/account_modify/signup_modal";
+import type { User } from "@supabase/supabase-js";
+import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { Menu, MenuButton, MenuItem, MenuItems } from "@headlessui/react";
+import { ClipLoader } from "react-spinners";
+
+interface HeaderClientProps {
+  user: User | null;
+}
+
+const HeaderClient: React.FC<HeaderClientProps> = ({ user }) => {
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const modalType = searchParams.get("modal");
+
+  const supabase = createClientComponentClient();
+
+  const closeModal = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete("modal");
+    router.push(url.pathname + url.search);
+  };
+
+  const openModal = (type: "login" | "signup") => {
+    const url = new URL(window.location.href);
+    url.searchParams.set("modal", type);
+    router.push(url.pathname + url.search);
+  };
+
+  const handleNavigation = (path: string) => {
+    setIsLoading(true);
+    startTransition(() => {
+      router.push(path);
+      setIsLoading(false);
+    });
+  };
+
+  useEffect(() => {
+    const handleRouteChange = () => setIsLoading(false);
+    window.addEventListener("popstate", handleRouteChange);
+    return () => {
+      window.removeEventListener("popstate", handleRouteChange);
+    };
+  }, []);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
+  };
+
+  const renderAuthButtons = () => {
+    if (user) {
+      return (
+        <>
+          <div className="flex gap-x-5">
+            <button
+              className="cursor-pointer text-amber-50 hover:text-[#E19517]"
+              onClick={() => handleNavigation("/cart")}
+            >
+              <ShoppingCart size={32}> </ShoppingCart>
+            </button>
+            <button
+              className="cursor-pointer text-amber-50 hover:text-[#E19517]"
+              onClick={() => handleNavigation("/orders")}
+            >
+              <Truck size={32}></Truck>
+            </button>
+            <Menu as="div" className="relative inline-block text-left">
+              <div>
+                <MenuButton className="cursor-pointer text-amber-50 hover:text-[#E19517]">
+                  <CircleUserRoundIcon size={32}></CircleUserRoundIcon>
+                </MenuButton>
+              </div>
+
+              <MenuItems
+                transition
+                className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white ring-1 shadow-lg ring-black/5 transition focus:outline-hidden data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
+              >
+                <div className="py-1">
+                  <MenuItem>
+                    <a
+                      href={"/account"}
+                      className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-[#E19517]/30 data-focus:text-[#E19517] data-focus:outline-hidden"
+                    >
+                      Account Settings
+                    </a>
+                  </MenuItem>
+                  <MenuItem>
+                    <button
+                      onClick={handleLogout}
+                      className="block w-full px-4 py-2 text-left text-sm  text-gray-700 data-focus:bg-[#E19517]/30 data-focus:text-[#E19517] data-focus:outline-hidden cursor-pointer"
+                    >
+                      Sign out
+                    </button>
+                  </MenuItem>
+                </div>
+              </MenuItems>
+            </Menu>
+          </div>
+        </>
+      );
+    } else {
+      return (
+        <>
+          <button
+            className="border-2 border-[#E19517] rounded-lg py-1 px-4 cursor-pointer text-amber-50 font-medium"
+            onClick={() => openModal("login")}
+          >
+            Log In
+          </button>
+          <button
+            className="border-2 border-[#E19517] bg-[#E19517] rounded-lg py-1 px-4 cursor-pointer text-amber-50 font-medium"
+            onClick={() => openModal("signup")}
+          >
+            Sign Up
+          </button>
+        </>
+      );
+    }
+  };
+
+  const scrollToSection = (id: string) => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: "smooth" });
+    } else {
+      startTransition(() => {
+        router.push("/");
+        setTimeout(() => {
+          const target = document.getElementById(id);
+          if (target) {
+            target.scrollIntoView({ behavior: "smooth" });
+          }
+        }, 300);
+      });
+    }
+  };
+
+  return (
+    <>
+      {isLoading && (
+        <div className="fixed inset-0 bg-gray-950/50 bg-opacity-90 flex items-center justify-center z-50">
+          <div>
+            <ClipLoader color="#E19517" size={60} className="font-bold" />
+          </div>
+        </div>
+      )}
+      <header className="flex justify-between items-center h-20 bg-[#7B5137] px-6 md:px-30 relative z-20">
+        {/* Mobile Header */}
+        <div className="md:hidden flex w-full justify-between items-center">
+          <div className="flex items-center gap-x-2">
+            <button
+              className="text-amber-50 focus:outline-none"
+              onClick={() => setMenuOpen(!menuOpen)}
+            >
+              {menuOpen ? <X size={24} /> : <MenuIcon size={24} />}
+            </button>
+            <Link href="/">
+              <Image
+                src="/assets/logos.png"
+                alt="Logo"
+                width={80}
+                height={32}
+              />
+            </Link>
+          </div>
+
+          {user && (
+            <div className="flex gap-x-2">
+              <button
+                className="cursor-pointer text-amber-50 hover:text-[#E19517]"
+                onClick={() => handleNavigation("/cart")}
+              >
+                <ShoppingCart size={22} />
+              </button>
+              <button
+                className="cursor-pointer text-amber-50 hover:text-[#E19517]"
+                onClick={() => handleNavigation("/orders")}
+              >
+                <Truck size={22} />
+              </button>
+              <Menu as="div" className="relative inline-block text-left">
+                <div>
+                  <MenuButton className="cursor-pointer text-amber-50 hover:text-[#E19517]">
+                    <CircleUserRoundIcon size={22} />
+                  </MenuButton>
+                </div>
+
+                <MenuItems
+                  transition
+                  className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white ring-1 shadow-lg ring-black/5 transition focus:outline-hidden data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
+                >
+                  <div className="py-1">
+                    <MenuItem>
+                      <a
+                        href={"/account"}
+                        className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-[#E19517]/30 data-focus:text-[#E19517] data-focus:outline-hidden"
+                      >
+                        Account Settings
+                      </a>
+                    </MenuItem>
+                    <MenuItem>
+                      <button
+                        onClick={handleLogout}
+                        className="block w-full px-4 py-2 text-left text-sm text-gray-700 data-focus:bg-[#E19517]/30 data-focus:text-[#E19517] data-focus:outline-hidden cursor-pointer"
+                      >
+                        Sign out
+                      </button>
+                    </MenuItem>
+                  </div>
+                </MenuItems>
+              </Menu>
+            </div>
+          )}
+        </div>
+
+        {/* Desktop Header */}
+        <div className="hidden md:flex items-center gap-x-7">
+          <Link href="/">
+            <Image src="/assets/logos.png" alt="Logo" width={100} height={40} />
+          </Link>
+          <nav className="flex items-center gap-x-7">
+            <button
+              onClick={() => handleNavigation("/")}
+              className="text-amber-50 hover:text-[#E19517] font-light cursor-pointer"
+            >
+              Home
+            </button>
+            <button
+              onClick={() => handleNavigation("/products")}
+              className="text-amber-50 hover:text-[#E19517] font-light cursor-pointer"
+            >
+              Products
+            </button>
+            <button
+              onClick={() => scrollToSection("about")}
+              className="text-amber-50 hover:text-[#E19517] font-light cursor-pointer"
+            >
+              About Us
+            </button>
+            <button
+              onClick={() => scrollToSection("footer")}
+              className="text-amber-50 hover:text-[#E19517] font-light cursor-pointer"
+            >
+              Contact Us
+            </button>
+          </nav>
+        </div>
+
+        {/* Desktop Auth/Profile Buttons */}
+        <div className="hidden md:flex gap-x-3">{renderAuthButtons()}</div>
+
+        {/* Mobile Dropdown Menu */}
+        <div
+          className={`absolute top-20 left-0 w-full bg-[#7B5137]/90 flex flex-col items-center py-4 space-y-3 md:hidden transition-transform duration-300 z-20 ${
+            menuOpen
+              ? "translate-y-0 opacity-100"
+              : "-translate-y-10 opacity-0 pointer-events-none"
+          }`}
+        >
+          {[
+            { label: "Home", id: "" },
+            { label: "About Us", id: "about" },
+            { label: "Contact Us", id: "footer" },
+          ].map(({ label, id }, i) => (
+            <button
+              key={i}
+              className="text-amber-50 font-light cursor-pointer"
+              onClick={() => {
+                setMenuOpen(false);
+                if (id === "") handleNavigation("/");
+                else scrollToSection(id);
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </header>
+
+      {/* Render modals based on URL */}
+      {modalType === "login" && (
+        <LoginModal
+          onClose={closeModal}
+          onSwitchToSignUp={() => {
+            openModal("signup");
+          }}
+        />
+      )}
+
+      {modalType === "signup" && (
+        <SignUpModal
+          onClose={closeModal}
+          onSwitchToLogin={() => {
+            openModal("login");
+          }}
+        />
+      )}
+    </>
+  );
+};
+
+export default HeaderClient;

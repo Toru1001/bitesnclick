@@ -1,7 +1,7 @@
 import { X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import InputVoucherCard from '../../model/input-voucher-card';
-import { supabase } from '@/app/lib/supabase';
+import { supabase } from '@/lib/supabase/client';
 
 interface InputVoucherModalProps {
   onClose: () => void;
