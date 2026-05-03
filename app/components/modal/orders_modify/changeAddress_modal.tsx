@@ -158,7 +158,7 @@ const ChangeAddressModal: React.FC<ChangeAddressModalProps> = ({
                                         type="text"
                                         id="street-address"
                                         name="streetAddress"
-                                        defaultValue={safeText("")}
+                                        defaultValue=""
                                         className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
                                     />
                                 </div>
@@ -173,7 +173,7 @@ const ChangeAddressModal: React.FC<ChangeAddressModalProps> = ({
                                         type="text"
                                         id="barangay"
                                         name="barangay"
-                                        defaultValue={safeText("")}
+                                        defaultValue=""
                                         className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
                                     />
                                 </div>
