@@ -2,9 +2,56 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { safeText } from '@/lib/utils/sanitize';
 
+const ALLOWED_PAYMENT_METHODS = ['Cash On Delivery', 'GCASH'] as const;
+
+class OrderApiError extends Error {
+  status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = 'OrderApiError';
+    this.status = status;
+  }
+}
+
+function assertCartId(cartId: unknown) {
+  if (typeof cartId !== 'string' || !cartId.trim()) {
+    throw new OrderApiError(400, 'Missing cartId');
+  }
+
+  return cartId;
+}
+
+function assertPaymentMethod(paymentMethod: unknown) {
+  if (
+    typeof paymentMethod !== 'string' ||
+    !ALLOWED_PAYMENT_METHODS.includes(paymentMethod as (typeof ALLOWED_PAYMENT_METHODS)[number])
+  ) {
+    throw new OrderApiError(400, 'Invalid payment method');
+  }
+
+  return paymentMethod;
+}
+
+function sanitizeOrderText(value: unknown, maxLength: number) {
+  return safeText(value).slice(0, maxLength);
+}
+
+async function requireUser(supabase: any) {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    throw new OrderApiError(401, 'Not authenticated');
+  }
+
+  return user;
+}
+
 async function validateVoucher(supabase: any, voucherCode: string | null) {
   if (!voucherCode) return null;
-  
+
   const { data: voucherData, error: voucherError } = await supabase
     .from('vouchers')
     .select('voucherid, status, start_date, end_date, percent')
@@ -21,24 +68,58 @@ async function validateVoucher(supabase: any, voucherCode: string | null) {
   return voucherData;
 }
 
+async function fetchCartItems(supabase: any, cartId: string) {
+  const { data: cartItems, error: cartItemsError } = await supabase
+    .from('cart_items')
+    .select('*, product:productid(price)')
+    .eq('cartid', cartId);
+
+  if (cartItemsError) {
+    throw new OrderApiError(500, 'Failed to fetch cart items');
+  }
+
+  if (!cartItems || cartItems.length === 0) {
+    throw new OrderApiError(400, 'Cart is empty');
+  }
+
+  return cartItems;
+}
+
+async function getVoucherDiscount(supabase: any, voucherId: number | null) {
+  if (!voucherId) return 0;
+  
+  const { data: voucher } = await supabase.from('vouchers').select('percent').eq('voucherid', voucherId).single();
+  return voucher?.percent ?? 0;
+}
+
 async function calculateFinalPrice(supabase: any, cartItems: any[], voucherId: number | null) {
   const subtotal = cartItems.reduce((sum: number, item: any) => sum + (item.total_price || 0), 0);
-  const deliveryFee = 40;
-  let finalPrice = subtotal === 0 ? 0 : subtotal + deliveryFee;
+  const deliveryFee = subtotal === 0 ? 0 : 40;
+  let finalPrice = subtotal + deliveryFee;
 
-  if (voucherId) {
-    const { data: voucher } = await supabase.from('vouchers').select('percent').eq('voucherid', voucherId).single();
-    if (voucher) {
-      const discountAmount = (finalPrice * (voucher.percent || 0)) / 100;
-      finalPrice = finalPrice - discountAmount;
-    }
+  const voucherPercent = await getVoucherDiscount(supabase, voucherId);
+  const discountAmount = (finalPrice * voucherPercent) / 100;
+  
+  return finalPrice - discountAmount;
+}
+
+async function insertOrder(supabase: any, orderData: Record<string, unknown>) {
+  const { data: orderInsertData, error: orderError } = await supabase
+    .from('orders')
+    .insert(orderData)
+    .select('orderid')
+    .single();
+
+  if (orderError || !orderInsertData) {
+    throw new OrderApiError(500, 'Failed to insert order');
   }
-  return finalPrice;
+
+  return orderInsertData.orderid;
 }
 
 async function buildOrderDetails(supabase: any, cartItems: any[], orderId: number) {
   const orderDetailsData: any[] = [];
-  
+
   for (const item of cartItems) {
     const { data: discountData } = await supabase
       .from('discount')
@@ -60,29 +141,46 @@ async function buildOrderDetails(supabase: any, cartItems: any[], orderId: numbe
   return orderDetailsData;
 }
 
+async function persistOrderSideEffects(
+  supabase: any,
+  cartId: string,
+  cartItems: any[],
+  orderId: number,
+  voucherId: number | null,
+) {
+  const orderDetailsData = await buildOrderDetails(supabase, cartItems, orderId);
+
+  if (orderDetailsData.length > 0) {
+    const { error: orderDetailsError } = await supabase.from('orderdetails').insert(orderDetailsData);
+
+    if (orderDetailsError) {
+      throw new OrderApiError(500, 'Failed to insert order details');
+    }
+  }
+
+  const { error: deleteCartItemsError } = await supabase.from('cart_items').delete().eq('cartid', cartId);
+
+  if (deleteCartItemsError) {
+    throw new OrderApiError(500, 'Failed to clear cart');
+  }
+
+  if (voucherId) {
+    await supabase.from('vouchers').update({ status: 'used' }).eq('voucherid', voucherId);
+  }
+}
+
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { cartId, message, address, paymentMethod, payment_img, voucherCode } = body;
 
-    if (!cartId) {
-      return NextResponse.json({ error: 'Missing cartId' }, { status: 400 });
-    }
+    const validCartId = assertCartId(cartId);
+    const validPaymentMethod = assertPaymentMethod(paymentMethod);
 
     const supabase = await createClient();
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-    }
-
-    const allowedMethods = ['Cash On Delivery', 'GCASH'];
-    if (!paymentMethod || !allowedMethods.includes(paymentMethod)) {
-      return NextResponse.json({ error: 'Invalid payment method' }, { status: 400 });
-    }
-
-    const safeMessage = safeText(message).slice(0, 500);
-    const safeAddress = safeText(address).slice(0, 500);
+    const user = await requireUser(supabase);
+    const safeMessage = sanitizeOrderText(message, 500);
+    const safeAddress = sanitizeOrderText(address, 500);
 
     const voucherData = await validateVoucher(supabase, voucherCode);
     if (voucherCode && !voucherData) {
@@ -90,22 +188,11 @@ export async function POST(req: Request) {
     }
 
     const voucherId = voucherData?.voucherid || null;
-    const { data: cartItems, error: cartItemsError } = await supabase
-      .from('cart_items')
-      .select('*, product:productid(price)')
-      .eq('cartid', cartId);
-
-    if (cartItemsError) {
-      return NextResponse.json({ error: 'Failed to fetch cart items' }, { status: 500 });
-    }
-
-    if (!cartItems || cartItems.length === 0) {
-      return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
-    }
+    const cartItems = await fetchCartItems(supabase, validCartId);
 
     const finalPrice = await calculateFinalPrice(supabase, cartItems, voucherId);
 
-    const orderData: any = {
+    const orderData = {
       order_status: 'Pending',
       order_date: new Date().toISOString(),
       order_price: finalPrice.toFixed(2),
@@ -113,41 +200,19 @@ export async function POST(req: Request) {
       delivery_address: safeAddress,
       customerid: user.id,
       voucherid: voucherId,
-      paymentMethod,
+      paymentMethod: validPaymentMethod,
       payment_img: payment_img ?? null,
     };
 
-    const { data: orderInsertData, error: orderError } = await supabase
-      .from('orders')
-      .insert(orderData)
-      .select('orderid')
-      .single();
-
-    if (orderError || !orderInsertData) {
-      return NextResponse.json({ error: 'Failed to insert order' }, { status: 500 });
-    }
-
-    const orderId = orderInsertData.orderid;
-    const orderDetailsData = await buildOrderDetails(supabase, cartItems, orderId);
-
-    if (orderDetailsData.length > 0) {
-      const { error: orderDetailsError } = await supabase.from('orderdetails').insert(orderDetailsData);
-      if (orderDetailsError) {
-        return NextResponse.json({ error: 'Failed to insert order details' }, { status: 500 });
-      }
-    }
-
-    const { error: deleteCartItemsError } = await supabase.from('cart_items').delete().eq('cartid', cartId);
-    if (deleteCartItemsError) {
-      return NextResponse.json({ error: 'Failed to clear cart' }, { status: 500 });
-    }
-
-    if (voucherId) {
-      await supabase.from('vouchers').update({ status: 'used' }).eq('voucherid', voucherId);
-    }
+    const orderId = await insertOrder(supabase, orderData);
+    await persistOrderSideEffects(supabase, validCartId, cartItems, orderId, voucherId);
 
     return NextResponse.json({ orderId }, { status: 200 });
   } catch (err) {
+    if (err instanceof OrderApiError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+
     console.error('Order API error:', err);
     return NextResponse.json({ error: 'Unexpected server error' }, { status: 500 });
   }
