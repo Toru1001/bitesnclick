@@ -12,6 +12,18 @@ import PaymentModal from "@/app/components/modal/orders_modify/payment_modal";
 import SuccessModal from "@/app/components/modal/success_modal";
 import { toast, ToastContainer } from "react-toastify";
 
+function safeText(text: any) {
+  if (!text) return "";
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+function normalize(text: string) {
+  return text.replace(/\s+/g, " ").trim();
+}
+
 export default function Home() {
   const router = useRouter();
   const [changeAdress, setChangeAddress] = useState(false);
@@ -187,8 +199,16 @@ export default function Home() {
     setAddress(newAddress);
   };
 
+  
   const handleVoucherChange = async (voucher: string) => {
     try {
+      // Validate voucher format first
+      const voucherRegex = /^[A-Z0-9_-]{3,20}$/;
+
+      if (!voucherRegex.test(voucher)) {
+        alert("Invalid voucher code format.");
+        return;
+      }
       const { data, error } = await supabase
         .from("vouchers")
         .select("*")
@@ -265,8 +285,43 @@ export default function Home() {
 
       const messageElement =
         document.querySelector<HTMLTextAreaElement>("textarea");
-      const message = messageElement?.value || "";
 
+      let message = normalize(messageElement?.value || "");
+
+      // limit length
+      if (message.length > 300) {
+        return alert("Message too long (max 300 characters).");
+      }
+
+      // sanitize
+      message = safeText(message);
+      if (!address?.street || !address?.barangay) {
+  alert("Invalid delivery address.");
+  return;
+}
+
+  // length limits
+  if (address.street.length > 100) {
+    alert("Street address too long.");
+    return;
+  }
+
+  if (address.barangay.length > 50) {
+    alert("Barangay name too long.");
+    return;
+  }
+
+  const addressRegex = /^[a-zA-Z0-9\s.,'#-]+$/;
+
+  if (!addressRegex.test(address.street)) {
+    alert("Invalid street address.");
+    return;
+  }
+
+  if (!addressRegex.test(address.barangay)) {
+    alert("Invalid barangay.");
+    return;
+  }
       const orderData = {
         order_status: "Pending",
         order_date: new Date().toISOString(),
@@ -406,15 +461,15 @@ export default function Home() {
             <div className="flex justify-between mx-10">
               <div className="flex flex-col">
                 <span className="text-[#240C03] font-semibold">
-                  {customerData?.first_name} {customerData?.last_name}
+                  {safeText(customerData?.first_name)} {safeText(customerData?.last_name)}
                 </span>
                 <span className="text-[#240C03]">
-                  {customerData?.mobile_num}
+                  {safeText(customerData?.mobile_num)}
                 </span>
               </div>
               <span>
-                {address?.street}, {address?.barangay}, {address?.city}, Davao
-                Del Sur, {address?.zipcode}
+                {safeText(address?.street)}, {safeText(address?.barangay)}, {safeText(address?.city)}, Davao
+                Del Sur, {safeText(address?.zipcode)}
               </span>
               <button
                 className="border-2 border-[#E19517] rounded-lg h-fit py-2 px-5 hover:bg-[#E19517] hover:text-amber-50 cursor-pointer text-[#E19517] text-sm font-medium ease-in-out duration-200"

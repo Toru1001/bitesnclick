@@ -3,6 +3,11 @@ import React, { useState } from 'react';
 import { supabase } from '@/lib/supabase/client';
 import ConfirmationModal from '../confirmation_modal';
 
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+
+function sanitizeFileName(name: string) {
+  return name.replace(/[^a-zA-Z0-9.-]/g, "_");
+}
 interface PaymentModalProps {
     onClose: () => void;
     onImageUpload: (imageUrl: string) => void;
@@ -20,10 +25,24 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, onImageUpload }) =
     };
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            setSelectedFile(e.target.files[0]);
-        }
-    };
+  if (!e.target.files || !e.target.files[0]) return;
+
+  const file = e.target.files[0];
+
+  // Validate file size (2MB)
+  if (file.size > MAX_FILE_SIZE) {
+    alert("File size must be less than 2MB.");
+    return;
+  }
+
+  //Validate file type (REAL MIME check)
+  if (!file.type.startsWith("image/")) {
+    alert("Only image files are allowed.");
+    return;
+  }
+
+  setSelectedFile(file);
+};
 
     const handleSubmit = async () => {
         if (!selectedFile) {
@@ -34,7 +53,9 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ onClose, onImageUpload }) =
         setIsUploading(true);
 
         try {
-            const fileName = `${Date.now()}_${selectedFile.name}`;
+            const safeName = sanitizeFileName(selectedFile.name);
+            //  Add timestamp to avoid collisions
+            const fileName = `${Date.now()}_${safeName}`;
             const { error } = await supabase.storage
                 .from('gcash-payment')
                 .upload(`receipts/${fileName}`, selectedFile);

@@ -1,5 +1,6 @@
 import { Phone, X } from "lucide-react";
 import React, { useRef, useState } from "react";
+import { safeText } from "@/lib/utils/sanitize";
 
 interface ChangeAddressModalProps {
     onClose: () => void;
@@ -37,19 +38,53 @@ const ChangeAddressModal: React.FC<ChangeAddressModalProps> = ({
 
     const handleAddressChange = (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        if (formRef.current) {
-            const formData = new FormData(formRef.current);
-            const updatedAddress = {
-                street: formData.get("streetAddress"),
-                barangay: formData.get("barangay"),
-                city: formData.get("city"),
-                zipcode: formData.get("zipCode"),
-            };
-            if (onAddressChange) {
-                onAddressChange(updatedAddress);
-            }
-            onClose();
-        }
+
+    if (!formRef.current) return;
+
+    const formData = new FormData(formRef.current);
+
+    const street = String(formData.get("streetAddress") || "").trim();
+    const barangay = String(formData.get("barangay") || "").trim();
+    const city = String(formData.get("city") || "").trim();
+    const zipcode = String(formData.get("zipCode") || "").trim();
+
+    // Required check
+    if (!street || !barangay) {
+        return alert("Please fill in all required fields.");
+    }
+
+    // Length limits
+    if (street.length > 100) {
+        return alert("Street address too long.");
+    }
+
+    if (barangay.length > 50) {
+        return alert("Barangay name too long.");
+    }
+
+    // Basic character validation (prevents weird injections)
+    const textRegex = /^[a-zA-Z0-9\s.,'#\-\/]+$/;
+
+    if (!textRegex.test(street)) {
+        return alert("Invalid street address.");
+    }
+
+    if (!textRegex.test(barangay)) {
+        return alert("Invalid barangay.");
+    }
+
+    const updatedAddress = {
+        street: safeText(street),
+        barangay: safeText(barangay),
+        city: safeText(city),
+        zipcode: safeText(zipcode),
+    };
+
+    if (onAddressChange) {
+        onAddressChange(updatedAddress);
+    }
+
+    onClose();
     };
 
     return (
@@ -84,11 +119,11 @@ const ChangeAddressModal: React.FC<ChangeAddressModalProps> = ({
                     >
                         <div className="">
                             <span className="font-semibold text-xl">
-                                {name} | {phone}
+                                {safeText(name)} | {safeText(phone)}
                             </span>
                         </div>
                         <div className="">
-                            {address}
+                            {safeText(address)}
                         </div>
                     </div>
                     <button
@@ -123,7 +158,7 @@ const ChangeAddressModal: React.FC<ChangeAddressModalProps> = ({
                                         type="text"
                                         id="street-address"
                                         name="streetAddress"
-                                        defaultValue={""}
+                                        defaultValue=""
                                         className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
                                     />
                                 </div>
@@ -138,7 +173,7 @@ const ChangeAddressModal: React.FC<ChangeAddressModalProps> = ({
                                         type="text"
                                         id="barangay"
                                         name="barangay"
-                                        defaultValue={""}
+                                        defaultValue=""
                                         className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
                                     />
                                 </div>
