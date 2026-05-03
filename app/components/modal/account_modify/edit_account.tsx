@@ -5,6 +5,25 @@ import React, { useState, useEffect, useRef } from "react";
 import ConfirmationModal from "../confirmation_modal";
 import ClipLoader from "react-spinners/ClipLoader";
 
+// XSS Sanitizer
+function safeText(text: any) {
+  if (!text) return "";
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+// Validation stuffs
+const nameRegex = /^[a-zA-Z\s'-]+$/;
+const phoneRegex = /^09\d{9}$/;
+
+function limitLength(value: string, max: number) {
+  return value.length <= max;
+}
+
 interface EditAccountModalProps {
   onClose: () => void;
 }
@@ -103,6 +122,41 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
       setError("Please fill in all required fields.");
       alert("Please fill in all required fields.");
       return;
+    }
+
+    //More validations
+
+    // Name validation
+    if (!nameRegex.test(firstName)) {
+      form.firstName.classList.add("border-red-500");
+      return alert("Invalid first name.");
+    }
+
+    if (!nameRegex.test(lastName)) {
+      form.lastName.classList.add("border-red-500");
+      return alert("Invalid last name.");
+    }
+
+    // Mobile validation (PH format)
+    if (!phoneRegex.test(mobileNumber)) {
+      form.mobileNumber.classList.add("border-red-500");
+      return alert("Invalid mobile number (must be 09XXXXXXXXX).");
+    }
+
+    // Length limits
+    if (!limitLength(streetAddress, 100)) {
+      form.streetAddress.classList.add("border-red-500");
+      return alert("Street address too long.");
+    }
+
+    if (!limitLength(city, 50)) {
+      form.city.classList.add("border-red-500");
+      return alert("City name too long.");  
+    }
+
+    if (!limitLength(barangay, 50)) {
+      form.barangay.classList.add("border-red-500");
+      return alert("Barangay name too long.");
     }
 
     if (showEditPassword) {
@@ -285,7 +339,7 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
                     type="text"
                     id="first-name"
                     name="firstName"
-                    defaultValue={customerDetails?.first_name || ""}
+                    defaultValue={safeText(customerDetails?.first_name || "")}
                     className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
                   />
                 </div>
@@ -300,7 +354,7 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
                     type="text"
                     id="last-name"
                     name="lastName"
-                    defaultValue={customerDetails?.last_name || ""}
+                    defaultValue={safeText(customerDetails?.last_name || "")}
                     className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
                   />
                 </div>
@@ -315,7 +369,7 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
                     type="email"
                     id="email"
                     name="email"
-                    placeholder={customerDetails?.email || ""}
+                    placeholder={safeText(customerDetails?.email || "")}
                     readOnly
                     className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
                   />
@@ -331,7 +385,7 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
                     type="tel"
                     id="mobile-number"
                     name="mobileNumber"
-                    defaultValue={customerDetails?.mobile_num || ""}
+                    defaultValue={safeText(customerDetails?.mobile_num || "")}
                     className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
                   />
                 </div>
@@ -346,7 +400,7 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
                     type="text"
                     id="street-address"
                     name="streetAddress"
-                    defaultValue={customerDetails?.street_address || ""}
+                    defaultValue={safeText(customerDetails?.street_address || "")}
                     className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
                   />
                 </div>
@@ -361,7 +415,7 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
                     type="text"
                     id="city"
                     name="city"
-                    defaultValue={customerDetails?.city || ""}
+                    defaultValue={safeText(customerDetails?.city || "")}
                     className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
                   />
                 </div>
@@ -376,7 +430,7 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
                     type="text"
                     id="barangay"
                     name="barangay"
-                    defaultValue={customerDetails?.barangay || ""}
+                    defaultValue={safeText(customerDetails?.barangay || "")}
                     className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
                   />
                 </div>
@@ -391,7 +445,7 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
                     type="text"
                     id="zip-code"
                     name="zipCode"
-                    placeholder={customerDetails?.zipcode || ""}
+                    placeholder={safeText(customerDetails?.zipcode || "")}
                     className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
                     readOnly
                   />
