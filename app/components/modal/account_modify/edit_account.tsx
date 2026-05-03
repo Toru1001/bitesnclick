@@ -1,20 +1,10 @@
 import { supabase } from "@/lib/supabase/client";
+import { safeText } from "@/lib/utils/sanitize";
 import { Eye, EyeOff, X } from "lucide-react";
 import router, { useRouter } from "next/navigation";
 import React, { useState, useEffect, useRef } from "react";
 import ConfirmationModal from "../confirmation_modal";
 import ClipLoader from "react-spinners/ClipLoader";
-
-// XSS Sanitizer
-function safeText(text: any) {
-  if (!text) return "";
-  return String(text)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
 
 // Validation stuffs
 const nameRegex = /^[a-zA-Z\s'-]+$/;
@@ -201,12 +191,12 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
       const { error: updateError } = await supabase
         .from("customers")
         .update({
-          first_name: firstName,
-          last_name: lastName,
-          mobile_num: mobileNumber,
-          street_address: streetAddress,
-          city,
-          barangay,
+          first_name: safeText(firstName),
+          last_name: safeText(lastName),
+          mobile_num: safeText(mobileNumber),
+          street_address: safeText(streetAddress),
+          city: safeText(city),
+          barangay: safeText(barangay),
         })
         .eq("customerid", user.id);
 

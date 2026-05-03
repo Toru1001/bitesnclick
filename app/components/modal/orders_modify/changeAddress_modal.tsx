@@ -1,16 +1,6 @@
 import { Phone, X } from "lucide-react";
 import React, { useRef, useState } from "react";
-
-// for preventing XSS attacks <3
-function safeText(text: any) {
-  if (!text) return "";
-  return String(text)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
+import { safeText } from "@/lib/utils/sanitize";
 
 interface ChangeAddressModalProps {
     onClose: () => void;
@@ -73,7 +63,7 @@ const ChangeAddressModal: React.FC<ChangeAddressModalProps> = ({
     }
 
     // Basic character validation (prevents weird injections)
-    const textRegex = /^[a-zA-Z0-9\s.,'-]+$/;
+    const textRegex = /^[a-zA-Z0-9\s.,'#\-\/]+$/;
 
     if (!textRegex.test(street)) {
         return alert("Invalid street address.");
@@ -84,10 +74,10 @@ const ChangeAddressModal: React.FC<ChangeAddressModalProps> = ({
     }
 
     const updatedAddress = {
-        street,
-        barangay,
-        city,
-        zipcode,
+        street: safeText(street),
+        barangay: safeText(barangay),
+        city: safeText(city),
+        zipcode: safeText(zipcode),
     };
 
     if (onAddressChange) {
