@@ -1,9 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import Image from "next/image";
 import { X } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
+import HCaptchaWidget, {
+  type HCaptchaWidgetHandle,
+} from "@/app/components/hcaptcha/hcaptcha-widget";
 
 interface LoginModalProps {
   onClose: () => void;
@@ -19,6 +23,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
   onClose,
   onSwitchToSignUp,
 }) => {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [state, setState] = useState<string>("login");
@@ -26,6 +31,10 @@ const LoginModal: React.FC<LoginModalProps> = ({
   const [forgotMessage, setForgotMessage] = useState<string | null>(null);
   const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
   const [failCount, setFailCount] = useState<number>(0);
+  const [loginCaptchaToken, setLoginCaptchaToken] = useState<string | null>(null);
+  const [forgotCaptchaToken, setForgotCaptchaToken] = useState<string | null>(null);
+  const loginCaptchaRef = useRef<HCaptchaWidgetHandle>(null);
+  const forgotCaptchaRef = useRef<HCaptchaWidgetHandle>(null);
 
   const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
@@ -66,13 +75,24 @@ const LoginModal: React.FC<LoginModalProps> = ({
       // If guard fails, don't block login (avoid locking out users due to transient server issues)
     }
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    if (!loginCaptchaToken) {
+      setError("Please complete the captcha.");
+      return;
+    }
+
+    const { data: signInData, error: signInError } =
+      await supabase.auth.signInWithPassword({
       email,
       password,
-    });
+      options: {
+        captchaToken: loginCaptchaToken,
+      },
+      });
 
     if (signInError) {
-      setError('Invalid credentials. Please try again.');
+      setError(signInError.message || "Login failed. Please try again.");
+      loginCaptchaRef.current?.reset();
+      setLoginCaptchaToken(null);
 
       const nextFailCount = failCount + 1;
       setFailCount(nextFailCount);
@@ -89,13 +109,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
       return;
     }
 
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError || !userData?.user) {
-      setError("Failed to retrieve user data.");
-      return;
-    }
-
-    const { session } = sessionData;
+    const session = signInData.session;
     const accessToken = session?.access_token;
 
     if (!accessToken) {
@@ -110,12 +124,15 @@ const LoginModal: React.FC<LoginModalProps> = ({
     // Successful login: clear local cooldown and reset server-side counter
     setFailCount(0);
     setCooldownUntil(null);
+    loginCaptchaRef.current?.reset();
+    setLoginCaptchaToken(null);
     fetch('/api/auth/login-guard', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, action: 'success' }),
     }).catch(() => {});
-    onClose(); 
+    onClose();
+    router.refresh();
   };
 
   const handleForgotPassword = async (
@@ -125,11 +142,16 @@ const LoginModal: React.FC<LoginModalProps> = ({
     setForgotMessage(null);
     setError(null);
 
+    if (!forgotCaptchaToken) {
+      setError("Please complete the captcha.");
+      return;
+    }
+
     try {
       const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: forgotEmail }),
+        body: JSON.stringify({ email: forgotEmail, captchaToken: forgotCaptchaToken }),
       });
 
       if (res.status === 429) {
@@ -139,7 +161,17 @@ const LoginModal: React.FC<LoginModalProps> = ({
         return;
       }
 
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setError(data?.error ?? "Failed to send reset email. Please try again.");
+        forgotCaptchaRef.current?.reset();
+        setForgotCaptchaToken(null);
+        return;
+      }
+
       setForgotMessage('Password reset email sent! Please check your inbox.');
+      forgotCaptchaRef.current?.reset();
+      setForgotCaptchaToken(null);
     } catch {
       setError('Failed to send reset email. Please try again.');
     }
@@ -199,7 +231,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
                   className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#E19517] border-gray-400"
                 />
               </div>
-              <div className="mb-10">
+              <div className="mb-5">
                 <div className="flex justify-between">
                   <label
                     htmlFor="password"
@@ -238,6 +270,11 @@ const LoginModal: React.FC<LoginModalProps> = ({
                   </label>
                 </div>
               </div>
+              <HCaptchaWidget
+                ref={loginCaptchaRef}
+                onTokenChange={setLoginCaptchaToken}
+                className="w-full"
+              />
               <button
                 type="submit"
                 className="w-full px-4 py-2 text-white bg-[#E19517] rounded-md hover:bg-[#E19517]/90 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -298,6 +335,11 @@ const LoginModal: React.FC<LoginModalProps> = ({
                   className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#E19517] border-gray-400"
                 />
               </div>
+              <HCaptchaWidget
+                ref={forgotCaptchaRef}
+                onTokenChange={setForgotCaptchaToken}
+                className="w-full"
+              />
               <button
                 type="submit"
                 className="w-full px-4 py-2 text-white bg-[#E19517] rounded-md hover:bg-[#E19517]/90 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400"
