@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 interface ForgotPasswordBody {
   email?: string;
+  captchaToken?: string;
 }
 
 interface RateLimitEntry {
@@ -46,9 +47,17 @@ export async function POST(req: Request) {
   try {
     const body = (await req.json()) as ForgotPasswordBody;
     const email = (body.email ?? "").trim();
+    const captchaToken = (body.captchaToken ?? "").trim();
 
     if (!email) {
       return Response.json({ error: "Email is required" }, { status: 400 });
+    }
+
+    if (!captchaToken) {
+      return Response.json(
+        { ok: false, error: "Captcha is required" },
+        { status: 400, headers: { "Cache-Control": "no-store" } }
+      );
     }
 
     const ip = getClientIp(req);
@@ -95,10 +104,18 @@ export async function POST(req: Request) {
 
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       ...(redirectTo ? { redirectTo } : {}),
+      captchaToken,
     });
 
     // Always return a generic success response to avoid email enumeration.
     if (error) {
+      const message = (error as { message?: string } | null)?.message ?? "";
+      if (/captcha/i.test(message)) {
+        return Response.json(
+          { ok: false, error: "Captcha verification failed" },
+          { status: 400, headers: { "Cache-Control": "no-store" } }
+        );
+      }
       return Response.json(
         { ok: true },
         { status: 200, headers: { "Cache-Control": "no-store" } }
