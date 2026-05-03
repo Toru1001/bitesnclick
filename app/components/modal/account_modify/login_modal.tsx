@@ -1,9 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import Image from "next/image";
 import { X } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+import { useRouter } from "next/navigation";
+import HCaptchaWidget, {
+  type HCaptchaWidgetHandle,
+} from "@/app/components/hcaptcha/hcaptcha-widget";
 
 interface LoginModalProps {
   onClose: () => void;
@@ -19,11 +23,18 @@ const LoginModal: React.FC<LoginModalProps> = ({
   onClose,
   onSwitchToSignUp,
 }) => {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [state, setState] = useState<string>("login");
   const [forgotEmail, setForgotEmail] = useState<string>("");
   const [forgotMessage, setForgotMessage] = useState<string | null>(null);
+  const [cooldownUntil, setCooldownUntil] = useState<number | null>(null);
+  const [failCount, setFailCount] = useState<number>(0);
+  const [loginCaptchaToken, setLoginCaptchaToken] = useState<string | null>(null);
+  const [forgotCaptchaToken, setForgotCaptchaToken] = useState<string | null>(null);
+  const loginCaptchaRef = useRef<HCaptchaWidgetHandle>(null);
+  const forgotCaptchaRef = useRef<HCaptchaWidgetHandle>(null);
 
   const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
@@ -39,24 +50,89 @@ const LoginModal: React.FC<LoginModalProps> = ({
 
     setError(null);
 
+    if (cooldownUntil && Date.now() < cooldownUntil) {
+      const seconds = Math.max(1, Math.ceil((cooldownUntil - Date.now()) / 1000));
+      setError(`Too many attempts. Try again in ${seconds}s.`);
+      return;
+    }
+
+    // Server-side rate limit gate (best-effort). Note: this mainly protects abuse via the UI.
+    try {
+      const guardRes = await fetch('/api/auth/login-guard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, action: 'check' }),
+      });
+
+      if (guardRes.status === 429) {
+        const data = await guardRes.json().catch(() => null);
+        const retryAfterSeconds = data?.retryAfterSeconds ?? Number(guardRes.headers.get('Retry-After')) ?? 60;
+        setCooldownUntil(Date.now() + retryAfterSeconds * 1000);
+        setError(`Too many attempts. Try again in ${retryAfterSeconds}s.`);
+        return;
+      }
+    } catch {
+      // If guard fails, don't block login (avoid locking out users due to transient server issues)
+    }
+
+    if (!loginCaptchaToken) {
+      setError("Please complete the captcha.");
+      return;
+    }
+
     const { data: signInData, error: signInError } =
       await supabase.auth.signInWithPassword({
-        email,
-        password,
+      email,
+      password,
+      options: {
+        captchaToken: loginCaptchaToken,
+      },
       });
 
     if (signInError) {
-      setError("Invalid credentials. Please try again.");
+      setError(signInError.message || "Login failed. Please try again.");
+      loginCaptchaRef.current?.reset();
+      setLoginCaptchaToken(null);
+
+      const nextFailCount = failCount + 1;
+      setFailCount(nextFailCount);
+      // Exponential backoff (client-side)
+      const backoffSeconds = Math.min(30, Math.pow(2, Math.min(5, nextFailCount)));
+      setCooldownUntil(Date.now() + backoffSeconds * 1000);
+
+      // Record failure in server-side guard
+      fetch('/api/auth/login-guard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, action: 'fail' }),
+      }).catch(() => {});
       return;
     }
 
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError || !userData?.user) {
-      setError("Failed to retrieve user data.");
+    const session = signInData.session;
+    const accessToken = session?.access_token;
+
+    if (!accessToken) {
+      setError('No access token found.');
       return;
     }
 
+    // Restore previous client session persistence behavior
+    localStorage.setItem('user_id', session.user.id);
+    localStorage.setItem('access_token', accessToken);
+
+    // Successful login: clear local cooldown and reset server-side counter
+    setFailCount(0);
+    setCooldownUntil(null);
+    loginCaptchaRef.current?.reset();
+    setLoginCaptchaToken(null);
+    fetch('/api/auth/login-guard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, action: 'success' }),
+    }).catch(() => {});
     onClose();
+    router.refresh();
   };
 
   const handleForgotPassword = async (
@@ -66,17 +142,38 @@ const LoginModal: React.FC<LoginModalProps> = ({
     setForgotMessage(null);
     setError(null);
 
-    const { error: forgotError } = await supabase.auth.resetPasswordForEmail(
-      forgotEmail,
-      {
-        redirectTo: "http://localhost:3000/auth/callback#reset-password",
-      },
-    );
+    if (!forgotCaptchaToken) {
+      setError("Please complete the captcha.");
+      return;
+    }
 
-    if (forgotError) {
-      setError("Failed to send reset email. Please try again.");
-    } else {
-      setForgotMessage("Password reset email sent! Please check your inbox.");
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: forgotEmail, captchaToken: forgotCaptchaToken }),
+      });
+
+      if (res.status === 429) {
+        const data = await res.json().catch(() => null);
+        const retryAfterSeconds = data?.retryAfterSeconds ?? Number(res.headers.get('Retry-After')) ?? 60;
+        setError(`Too many reset requests. Try again in ${retryAfterSeconds}s.`);
+        return;
+      }
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setError(data?.error ?? "Failed to send reset email. Please try again.");
+        forgotCaptchaRef.current?.reset();
+        setForgotCaptchaToken(null);
+        return;
+      }
+
+      setForgotMessage('Password reset email sent! Please check your inbox.');
+      forgotCaptchaRef.current?.reset();
+      setForgotCaptchaToken(null);
+    } catch {
+      setError('Failed to send reset email. Please try again.');
     }
   };
 
@@ -134,7 +231,7 @@ const LoginModal: React.FC<LoginModalProps> = ({
                   className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#E19517] border-gray-400"
                 />
               </div>
-              <div className="mb-10">
+              <div className="mb-5">
                 <div className="flex justify-between">
                   <label
                     htmlFor="password"
@@ -173,6 +270,11 @@ const LoginModal: React.FC<LoginModalProps> = ({
                   </label>
                 </div>
               </div>
+              <HCaptchaWidget
+                ref={loginCaptchaRef}
+                onTokenChange={setLoginCaptchaToken}
+                className="w-full"
+              />
               <button
                 type="submit"
                 className="w-full px-4 py-2 text-white bg-[#E19517] rounded-md hover:bg-[#E19517]/90 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -233,6 +335,11 @@ const LoginModal: React.FC<LoginModalProps> = ({
                   className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none focus:ring-2 focus:ring-[#E19517] border-gray-400"
                 />
               </div>
+              <HCaptchaWidget
+                ref={forgotCaptchaRef}
+                onTokenChange={setForgotCaptchaToken}
+                className="w-full"
+              />
               <button
                 type="submit"
                 className="w-full px-4 py-2 text-white bg-[#E19517] rounded-md hover:bg-[#E19517]/90 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400"

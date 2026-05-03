@@ -204,8 +204,8 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
         return;
       }
 
-      const response = await fetch("/lib/delete-account", {
-        method: "POST",
+      const response = await fetch('/lib/delete-account', {
+        method: 'POST',
         headers: {
           "Content-Type": "application/json",
         },
