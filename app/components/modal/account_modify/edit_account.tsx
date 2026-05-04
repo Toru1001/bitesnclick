@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabase/client";
+import HCaptchaWidget from "@/app/components/hcaptcha/hcaptcha-widget";
 import { safeText } from "@/lib/utils/sanitize";
 import { Eye, EyeOff, X } from "lucide-react";
 import router, { useRouter } from "next/navigation";
@@ -31,6 +32,7 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
   const [showDeleteConfirmationModal, setShowDeleteConfirmationModal] =
     useState(false);
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
   const handleOverlayClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (event.target === event.currentTarget) {
@@ -174,6 +176,12 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
         alert("Password must be at least 6 characters.");
         return;
       }
+
+      if (!captchaToken) {
+        setError("Please complete the captcha.");
+        alert("Please complete the captcha.");
+        return;
+      }
     }
 
     const {
@@ -209,18 +217,37 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
       if (authError) throw new Error(authError.message);
 
       if (showEditPassword) {
-        const { error: signInError } = await supabase.auth.signInWithPassword({
-          email: customerDetails.email,
-          password: oldPassword,
-        });
+        // Get the current session token for authorization
+        const {
+          data: { session },
+          error: sessionError,
+        } = await supabase.auth.getSession();
 
-        if (signInError) throw new Error("Old password is incorrect.");
+        if (sessionError || !session) {
+          throw new Error("Failed to get session. Please refresh and try again.");
+        }
 
-        const { error: passError } = await supabase.auth.updateUser({
-          password: newPassword,
-        });
+        // Call backend route to update password
+        const changePasswordResponse = await fetch(
+          "/api/auth/change-password",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${session.access_token}`,
+            },
+            body: JSON.stringify({
+              oldPassword,
+              newPassword,
+              captchaToken,
+            }),
+          }
+        );
 
-        if (passError) throw new Error(passError.message);
+        if (!changePasswordResponse.ok) {
+          const errorData = await changePasswordResponse.json();
+          throw new Error(errorData.error || "Failed to change password");
+        }
       }
 
       console.log("Account updated successfully.");
@@ -508,41 +535,51 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
                       </span>
                     </div>
 
-                    <div className="w-full relative">
-                      <label
-                        htmlFor="repassword"
-                        className="block text-sm font-medium text-[#240C03]"
-                      >
-                        Confirm New Password
-                      </label>
-                      <input
-                        type={showRePassword ? "text" : "password"}
-                        id="rePassword"
-                        name="rePassword"
-                        className="w-full px-4 py-2 mt-1 border rounded-md border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E19517]"
-                      />
-                      <span
-                        onClick={() => setReShowPassword(!showRePassword)}
-                        className="absolute right-3 top-9 cursor-pointer text-[#E19517]"
-                      >
-                        {showRePassword ? (
-                          <EyeOff size={20} />
-                        ) : (
-                          <Eye size={20} />
-                        )}
-                      </span>
+                    <div className="w-full md:col-span-2 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-4 md:items-end">
+                      <div className="w-full relative">
+                        <label
+                          htmlFor="repassword"
+                          className="block text-sm font-medium text-[#240C03]"
+                        >
+                          Confirm New Password
+                        </label>
+                        <input
+                          type={showRePassword ? "text" : "password"}
+                          id="rePassword"
+                          name="rePassword"
+                          className="w-full px-4 py-2 mt-1 border rounded-md border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E19517]"
+                        />
+                        <span
+                          onClick={() => setReShowPassword(!showRePassword)}
+                          className="absolute right-3 top-9 cursor-pointer text-[#E19517]"
+                        >
+                          {showRePassword ? (
+                            <EyeOff size={20} />
+                          ) : (
+                            <Eye size={20} />
+                          )}
+                        </span>
+                      </div>
+
+                      <div className="w-fit md:justify-self-end md:pb-1">
+                        <HCaptchaWidget
+                          onTokenChange={setCaptchaToken}
+                          size="normal"
+                          className="w-[300px] max-w-full overflow-hidden [&_iframe]:max-w-full"
+                        />
+                      </div>
                     </div>
                   </>
                 )}
               </div>
-              <div className="flex justify-between items-center pt-6">
+              <div className="flex flex-col gap-3 pt-6 sm:flex-row sm:justify-between sm:items-center">
                 <a
                   onClick={() => setShowDeleteConfirmationModal(true)}
                   className="font-light text-sm text-gray-400 underline cursor-pointer"
                 >
                   Delete Account
                 </a>
-                <div className="flex gap-x-2">
+                <div className="flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={onClose}
