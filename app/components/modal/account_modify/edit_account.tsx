@@ -12,11 +12,11 @@ const nameRegex = /^[a-zA-Z\s'-]+$/;
 const phoneRegex = /^09\d{9}$/;
 
 function limitLength(value: string, max: number) {
-  return value.length <= max;
+    return value.length <= max;
 }
 
 interface EditAccountModalProps {
-  onClose: () => void;
+    onClose: () => void;
 }
 
 const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
@@ -60,11 +60,6 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
         } else {
           setCustomerDetails(data);
         }
-      } else {
-        router.replace("/");
-        setError("User not logged in.");
-      }
-      setLoading(false);
     };
 
     fetchCustomerDetails();
@@ -328,212 +323,30 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
           <span className="font-semibold text-xl">Edit Profile</span>
         </div>
 
-        {loading && (
-          <div className="inset-0 z-40 bg-white/60 w-138 h-100 flex items-center justify-center rounded-lg">
-            <ClipLoader color="#E19517" size={50} />
-          </div>
-        )}
-
-        {!loading && (
-          <div className="mx-5">
-            <form
-              ref={formRef}
-              className="space-y-2 mt-5 w-full"
-              onSubmit={(e) => {
-                e.preventDefault();
-                setShowConfirmationModal(true);
-              }}
+    return (
+        <div
+            className="fixed inset-0 flex items-center justify-center bg-black/50 z-30"
+            onClick={handleOverlayClick}
+        >
+            <div
+                className="relative flex flex-col bg-white rounded-lg shadow-lg w-full md:w-fit h-full md:h-140 my-10 p-10 overflow-scroll [&::-webkit-scrollbar]:hidden scrollbar-thin scrollbar-none"
+                onClick={(e) => e.stopPropagation()}
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 gap-x-10 w-full">
-                <div className="w-full">
-                  <label
-                    htmlFor="first-name"
-                    className="block text-sm font-medium text-[#240C03]"
-                  >
-                    First Name
-                  </label>
-                  <input
-                    type="text"
-                    id="first-name"
-                    name="firstName"
-                    defaultValue={safeText(customerDetails?.first_name || "")}
-                    className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
-                  />
-                </div>
-                <div className="w-full">
-                  <label
-                    htmlFor="last-name"
-                    className="block text-sm font-medium text-[#240C03]"
-                  >
-                    Last Name
-                  </label>
-                  <input
-                    type="text"
-                    id="last-name"
-                    name="lastName"
-                    defaultValue={safeText(customerDetails?.last_name || "")}
-                    className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
-                  />
-                </div>
-                <div className="w-full">
-                  <label
-                    htmlFor="email"
-                    className="block text-sm font-medium text-[#240C03]"
-                  >
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    name="email"
-                    placeholder={safeText(customerDetails?.email || "")}
-                    readOnly
-                    className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
-                  />
-                </div>
-                <div className="w-full">
-                  <label
-                    htmlFor="mobile-number"
-                    className="block text-sm font-medium text-[#240C03]"
-                  >
-                    Mobile Number
-                  </label>
-                  <input
-                    type="tel"
-                    id="mobile-number"
-                    name="mobileNumber"
-                    defaultValue={safeText(customerDetails?.mobile_num || "")}
-                    className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
-                  />
-                </div>
-                <div className="w-full">
-                  <label
-                    htmlFor="street-address"
-                    className="block text-sm font-medium text-[#240C03]"
-                  >
-                    Street Address
-                  </label>
-                  <input
-                    type="text"
-                    id="street-address"
-                    name="streetAddress"
-                    defaultValue={safeText(customerDetails?.street_address || "")}
-                    className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
-                  />
-                </div>
-                <div className="w-full">
-                  <label
-                    htmlFor="city"
-                    className="block text-sm font-medium text-[#240C03]"
-                  >
-                    City
-                  </label>
-                  <input
-                    type="text"
-                    id="city"
-                    name="city"
-                    defaultValue={safeText(customerDetails?.city || "")}
-                    className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
-                  />
-                </div>
-                <div className="w-full">
-                  <label
-                    htmlFor="barangay"
-                    className="block text-sm font-medium text-[#240C03]"
-                  >
-                    Barangay
-                  </label>
-                  <input
-                    type="text"
-                    id="barangay"
-                    name="barangay"
-                    defaultValue={safeText(customerDetails?.barangay || "")}
-                    className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
-                  />
-                </div>
-                <div className="w-full">
-                  <label
-                    htmlFor="zip-code"
-                    className="block text-sm font-medium text-[#240C03]"
-                  >
-                    Zip Code
-                  </label>
-                  <input
-                    type="text"
-                    id="zip-code"
-                    name="zipCode"
-                    placeholder={safeText(customerDetails?.zipcode || "")}
-                    className="w-full px-4 py-2 mt-1 border border-gray-400 rounded-md focus:outline-none"
-                    readOnly
-                  />
-                </div>
-                <div className="flex items-center mt-3">
-                  <input
-                    type="checkbox"
-                    id="editPassword"
-                    checked={showEditPassword}
-                    onChange={() => setEditPassword(!showEditPassword)}
-                    className="mr-2 accent-[#E19517] scale-120"
-                  />
-                  <label
-                    htmlFor="editPassword"
-                    className="text-sm text-[#240C03]"
-                  >
-                    Change Password
-                  </label>
+                <button
+                    className="absolute flex cursor-pointer items-center justify-center top-5 right-5 w-10 h-10"
+                    onClick={onClose}
+                >
+                    <X className="text-[#240C03] font-bold" />
+                </button>
+                <div className="flex w-full justify-center border-b-3 pb-2 border-[#E19517]">
+                    <span className="font-semibold text-xl">Edit Profile</span>
                 </div>
 
-                {showEditPassword && (
-                  <>
-                    <div className=""></div>
-                    <div className="w-full relative">
-                      <label
-                        htmlFor="password"
-                        className="block text-sm font-medium text-[#240C03]"
-                      >
-                        Old Password
-                      </label>
-                      <input
-                        type={showOldPassword ? "text" : "password"}
-                        id="oldPassword"
-                        name="oldPassword"
-                        className="w-full px-4 py-2 mt-1 border rounded-md border-gray-400 focus:outline-none focus:ring-2 focus:ring-[#E19517]"
-                      />
-                      <span
-                        onClick={() => setOldPassword(!showOldPassword)}
-                        className="absolute right-3 top-9 cursor-pointer text-[#E19517]"
-                      >
-                        {showOldPassword ? (
-                          <EyeOff size={20} />
-                        ) : (
-                          <Eye size={20} />
-                        )}
-                      </span>
+                {loading && (
+                    <div className="inset-0 z-40 bg-white/60 w-138 h-100 flex items-center justify-center rounded-lg">
+                        <ClipLoader color="#E19517" size={50} />
                     </div>
-                    <div className="w-full relative">
-                      <label
-                        htmlFor="password"
-                        className="block text-sm font-medium text-[#240C03]"
-                      >
-                        New Password
-                      </label>
-                      <input
-                        type={showPassword ? "text" : "password"}
-                        id="newPassword"
-                        name="newPassword"
-                        className="w-full px-4 py-2 mt-1 border rounded-md focus:outline-none border-gray-400 focus:ring-2 focus:ring-[#E19517]"
-                      />
-                      <span
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-9 cursor-pointer text-[#E19517]"
-                      >
-                        {showPassword ? (
-                          <EyeOff size={20} />
-                        ) : (
-                          <Eye size={20} />
-                        )}
-                      </span>
-                    </div>
+                )}
 
                     <div className="w-full md:col-span-2 grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_auto] gap-4 md:items-end">
                       <div className="w-full relative">
@@ -569,7 +382,6 @@ const EditAccountModal: React.FC<EditAccountModalProps> = ({ onClose }) => {
                         />
                       </div>
                     </div>
-                  </>
                 )}
               </div>
               <div className="flex flex-col gap-3 pt-6 sm:flex-row sm:justify-between sm:items-center">
