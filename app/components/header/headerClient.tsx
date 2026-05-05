@@ -71,49 +71,71 @@ const HeaderClient: React.FC<HeaderClientProps> = ({ user }) => {
       return (
         <>
           <div className="flex gap-x-5">
-            <button
-              className="cursor-pointer text-amber-50 hover:text-[#E19517]"
-              onClick={() => handleNavigation("/cart")}
-            >
-              <ShoppingCart size={32}> </ShoppingCart>
-            </button>
-            <button
-              className="cursor-pointer text-amber-50 hover:text-[#E19517]"
-              onClick={() => handleNavigation("/orders")}
-            >
-              <Truck size={32}></Truck>
-            </button>
-            <Menu as="div" className="relative inline-block text-left">
-              <div>
-                <MenuButton className="cursor-pointer text-amber-50 hover:text-[#E19517]">
-                  <CircleUserRoundIcon size={32}></CircleUserRoundIcon>
-                </MenuButton>
-              </div>
-
-              <MenuItems
-                transition
-                className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white ring-1 shadow-lg ring-black/5 transition focus:outline-hidden data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
+            {/* CART */}
+            <div className="relative group flex items-center">
+              <button
+                className="cursor-pointer text-amber-50 hover:text-[#E19517]"
+                onClick={() => handleNavigation("/cart")}
               >
-                <div className="py-1">
-                  <MenuItem>
-                    <a
-                      href={"/account"}
-                      className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-[#E19517]/30 data-focus:text-[#E19517] data-focus:outline-hidden"
-                    >
-                      Account Settings
-                    </a>
-                  </MenuItem>
-                  <MenuItem>
-                    <button
-                      onClick={handleLogout}
-                      className="block w-full px-4 py-2 text-left text-sm  text-gray-700 data-focus:bg-[#E19517]/30 data-focus:text-[#E19517] data-focus:outline-hidden cursor-pointer"
-                    >
-                      Sign out
-                    </button>
-                  </MenuItem>
+                <ShoppingCart size={32} />
+              </button>
+              <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[120%] bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-[999]">
+                View Cart
+              </span>
+            </div>
+
+            {/* ORDERS */}
+            <div className="relative group flex items-center">
+              <button
+                className="cursor-pointer text-amber-50 hover:text-[#E19517]"
+                onClick={() => handleNavigation("/orders")}
+              >
+                <Truck size={32} />
+              </button>
+              <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[120%] bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-[999]">
+                Your Orders
+              </span>
+            </div>
+
+            {/* PROFILE */}
+            <div className="relative group flex items-center">
+              <Menu as="div" className="relative inline-block text-left">
+                <div>
+                  <MenuButton className="cursor-pointer text-amber-50 hover:text-[#E19517]">
+                    <CircleUserRoundIcon size={32} />
+                  </MenuButton>
                 </div>
-              </MenuItems>
-            </Menu>
+
+                {/* Tooltip */}
+                <span className="pointer-events-none absolute left-1/2 -translate-x-1/2 top-[120%] bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-[999]">
+                  Profile
+                </span>
+
+                <MenuItems
+                  transition
+                  className="absolute right-0 z-10 mt-2 w-56 origin-top-right rounded-md bg-white ring-1 shadow-lg ring-black/5 transition focus:outline-hidden data-closed:scale-95 data-closed:transform data-closed:opacity-0 data-enter:duration-100 data-enter:ease-out data-leave:duration-75 data-leave:ease-in"
+                >
+                  <div className="py-1">
+                    <MenuItem>
+                      <a
+                        href={"/account"}
+                        className="block px-4 py-2 text-sm text-gray-700 data-focus:bg-[#E19517]/30 data-focus:text-[#E19517]"
+                      >
+                        Account Settings
+                      </a>
+                    </MenuItem>
+                    <MenuItem>
+                      <button
+                        onClick={handleLogout}
+                        className="block w-full px-4 py-2 text-left text-sm text-gray-700 data-focus:bg-[#E19517]/30 data-focus:text-[#E19517]"
+                      >
+                        Sign out
+                      </button>
+                    </MenuItem>
+                  </div>
+                </MenuItems>
+              </Menu>
+            </div>
           </div>
         </>
       );
@@ -185,18 +207,28 @@ const HeaderClient: React.FC<HeaderClientProps> = ({ user }) => {
 
           {user && (
             <div className="flex gap-x-2">
-              <button
-                className="cursor-pointer text-amber-50 hover:text-[#E19517]"
-                onClick={() => handleNavigation("/cart")}
-              >
-                <ShoppingCart size={22} />
-              </button>
-              <button
-                className="cursor-pointer text-amber-50 hover:text-[#E19517]"
-                onClick={() => handleNavigation("/orders")}
-              >
-                <Truck size={22} />
-              </button>
+              <div className="relative group">
+                <button
+                  className="cursor-pointer text-amber-50 hover:text-[#E19517]"
+                  onClick={() => handleNavigation("/cart")}
+                >
+                  <ShoppingCart size={32} />
+                </button>
+                <span className="absolute top-full mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                  View Cart
+                </span>
+              </div>
+              <div className="relative group">
+                <button
+                  className="cursor-pointer text-amber-50 hover:text-[#E19517]"
+                  onClick={() => handleNavigation("/orders")}
+                >
+                  <Truck size={32} />
+                </button>
+                <span className="absolute top-full mt-2 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-50">
+                  Your Orders
+                </span>
+              </div>
               <Menu as="div" className="relative inline-block text-left">
                 <div>
                   <MenuButton className="cursor-pointer text-amber-50 hover:text-[#E19517]">
